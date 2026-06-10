@@ -106,12 +106,12 @@ static uint32_t tickCount  = 0;
 static uint32_t nextTickAt = 0;
 static const uint32_t TICK_MS = 200;
 
-#include "stats.h"
+#include "faces_store.h"
 
 void buddyInit() {
   tickCount = 0;
   nextTickAt = 0;
-  uint8_t saved = speciesIdxLoad();
+  uint8_t saved = facesSpeciesLoad();
   if (saved < N_SPECIES) currentSpeciesIdx = saved;
 }
 
@@ -138,12 +138,12 @@ uint8_t buddySpeciesIdx() { return currentSpeciesIdx; }
 
 void buddyNextSpecies() {
   currentSpeciesIdx = (currentSpeciesIdx + 1) % N_SPECIES;
-  speciesIdxSave(currentSpeciesIdx);
+  facesSpeciesSave(currentSpeciesIdx);
 }
 
 void buddyPrevSpecies() {
   currentSpeciesIdx = (currentSpeciesIdx + N_SPECIES - 1) % N_SPECIES;
-  speciesIdxSave(currentSpeciesIdx);
+  facesSpeciesSave(currentSpeciesIdx);
 }
 
 // Only redraw when tickCount actually changes — animations run at TICK_MS
