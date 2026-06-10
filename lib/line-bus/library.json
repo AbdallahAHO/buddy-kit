@@ -1,0 +1,9 @@
+{
+  "name": "buddy-line-bus",
+  "version": "0.1.0",
+  "description": "Transport-agnostic line bus: ByteSource byte-pipe contract, newline framer, fan-out ack writer, fixed-table command dispatch. Header-only, heapless.",
+  "license": "MIT",
+  "dependencies": [
+    { "owner": "bblanchon", "name": "ArduinoJson", "version": "^7.0.0" }
+  ]
+}

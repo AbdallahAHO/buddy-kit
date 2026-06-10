@@ -5,8 +5,13 @@ back over serial, watch the acks, verify it reloads.
 """
 import sys, json, base64, time, glob, os, serial
 
+# Known quirk on ESP32-C6 native USB (HWCDC): ~1% of chunk ACKS are lost at
+# 4KB flash-erase boundaries (the data IS written — only the reply notify
+# drops while the single core is busy erasing). BLE transfers are unaffected.
+# If a chunk "fails" here, check file_end's n before assuming data loss.
+
 CHUNK = 256
-PORT = (glob.glob('/dev/cu.usbserial-*') + [None])[0]
+PORT = (glob.glob('/dev/cu.usbserial-*') + glob.glob('/dev/cu.usbmodem*') + [None])[0]
 if not PORT: sys.exit("no stick found")
 
 s = serial.Serial(PORT, 115200, timeout=2)

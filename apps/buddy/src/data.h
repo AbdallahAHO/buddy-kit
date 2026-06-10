@@ -3,7 +3,11 @@
 #include <ArduinoJson.h>
 #include "ble_bridge.h"
 #include "hw/rtc.h"
-#include "xfer.h"
+#include "stats.h"
+
+// Command dispatch lives in app_commands.h (same TU); declared here so
+// _applyJson can route {"cmd":...} docs before state parsing.
+bool appCommand(JsonDocument& doc);
 
 struct TamaState {
   uint8_t  sessionsTotal;
@@ -83,7 +87,7 @@ static void _matrixify(char* s) {
 static void _applyJson(const char* line, TamaState* out) {
   JsonDocument doc;
   if (deserializeJson(doc, line)) return;
-  if (xferCommand(doc)) { _lastLiveMs = millis(); return; }
+  if (appCommand(doc)) { _lastLiveMs = millis(); return; }
 
   // Bridge sends {"time":[epoch_sec, tz_offset_sec]}; gmtime_r on the
   // adjusted epoch yields local components including weekday.

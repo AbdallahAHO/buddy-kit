@@ -37,6 +37,8 @@ static void startBt() {
 
 #include "character.h"
 #include "stats.h"
+#include "file_push.h"
+#include "app_commands.h"
 const int W = HW_W;
 const int H = HW_H;
 const int CX = W / 2;
@@ -955,8 +957,13 @@ void drawHUD() {
 }
 
 void setup() {
+  // Native USB (HWCDC) delivers a whole ~370-byte chunk line faster than the
+  // loop polls, and its default 256-byte RX ring silently drops the tail.
+  // Size it for several chunk lines so USB file push works like BLE does.
+  Serial.setRxBufferSize(2048);
   hwInit();                  // Wire + expander + display + power + input + IMU + RTC + audio
   startBt();                 // BLE stays always-on
+  appCommandsInit();         // ack fan-out (USB+BLE) + file-push sink
   applyBrightness();
   lastInteractMs = millis();
   statsLoad();
@@ -1338,8 +1345,8 @@ void loop() {
     spr.fillScreen(p.bg);
     spr.setTextColor(p.textDim, p.bg);
     spr.setTextSize(1);
-    if (xferActive()) {
-      uint32_t done = xferProgress(), total = xferTotal();
+    if (filePushActive()) {
+      uint32_t done = filePushProgress(), total = filePushTotal();
       spr.setCursor(SAFE_L, 90);
       spr.print("installing");
       spr.setCursor(SAFE_L, 102);
@@ -1430,7 +1437,7 @@ void loop() {
           || hwBtnA().isPressed || hwBtnB().isPressed
           || inPrompt || menuOpen || settingsOpen || resetOpen
           || (int32_t)(now - oneShotUntil) < 0
-          || xferActive()
+          || filePushActive()
           || blePasskey()) {
     loopMs = 16;
   } else {
