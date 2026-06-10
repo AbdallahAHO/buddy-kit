@@ -1,3 +1,5 @@
+// Compiled only when the app selects the Bluedroid stack (ESP32-S3 envs).
+#ifdef BUDDY_BLE_BLUEDROID
 #include "ble_bridge.h"
 #include <BLEDevice.h>
 #include <BLEServer.h>
@@ -178,3 +180,4 @@ size_t bleWrite(const uint8_t* data, size_t len) {
   }
   return sent;
 }
+#endif  // BUDDY_BLE_BLUEDROID

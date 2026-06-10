@@ -1,3 +1,5 @@
+// Compiled only when the app selects the NimBLE stack (ESP32-C6 env).
+#ifdef BUDDY_BLE_NIMBLE
 #include "ble_bridge.h"
 #include <NimBLEDevice.h>
 #include <Arduino.h>
@@ -167,3 +169,4 @@ size_t bleWrite(const uint8_t* data, size_t len) {
   }
   return sent;
 }
+#endif  // BUDDY_BLE_NIMBLE

@@ -2,6 +2,10 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#if !defined(BUDDY_BLE_NIMBLE) && !defined(BUDDY_BLE_BLUEDROID)
+#error "Select a BLE stack: add -DBUDDY_BLE_NIMBLE (NimBLE, ESP32-C6) or -DBUDDY_BLE_BLUEDROID (Bluedroid, ESP32-S3) to build_flags."
+#endif
+
 // Nordic UART Service-compatible BLE bridge. Clients (browser Web
 // Bluetooth, noble, etc.) subscribe to NUS to talk to the Stick exactly
 // like a serial port.

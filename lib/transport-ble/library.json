@@ -1,0 +1,8 @@
+{
+  "name": "buddy-transport-ble",
+  "version": "0.1.0",
+  "description": "Nordic UART Service BLE bridge: 8-function contract (ble_bridge.h) with two stack implementations selected via -DBUDDY_BLE_NIMBLE or -DBUDDY_BLE_BLUEDROID. LE Secure Connections bonding, passkey display, MTU-chunked notifies.",
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}
