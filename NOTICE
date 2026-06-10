@@ -1,0 +1,8 @@
+buddy-kit is based on claude-desktop-buddy-esp32
+(https://github.com/vthinkxie/claude-desktop-buddy-esp32), itself a port of
+anthropics/claude-desktop-buddy. Both MIT licensed — see LICENSE.
+
+Vendored libraries under vendor/ retain their upstream licenses:
+- ES8311 (Espressif, Apache-2.0 headers as shipped upstream)
+- Adafruit_XCA9554 (Adafruit, BSD)
+- Arduino_DriveBus (as shipped upstream)

@@ -1,0 +1,9 @@
+{
+  "name": "buddy-hal-boards",
+  "version": "0.1.0",
+  "description": "Board capability headers: pins, display geometry, feature flags. One header per board, selected via -DBOARD_* build flag.",
+  "license": "MIT",
+  "build": {
+    "srcDir": "src"
+  }
+}
