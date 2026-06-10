@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <esp_mac.h>
 #include "ble_bridge.h"
-#include "data.h"
+#include "agent_link.h"
 #include "buddy.h"
 
 // TFT_eSPI used to define these named colors; Arduino_GFX uses
@@ -49,7 +49,7 @@ const int CY_BASE = 120;
 const uint16_t HOT   = 0xFA20;   // red-orange: warnings, impatience, deny
 const uint16_t PANEL = 0x2104;   // overlay panel background
 
-enum PersonaState { P_SLEEP, P_IDLE, P_BUSY, P_ATTENTION, P_CELEBRATE, P_DIZZY, P_HEART };
+// PersonaState comes from agent_state.h (via agent_link.h).
 const char* stateNames[] = { "sleep", "idle", "busy", "attention", "celebrate", "dizzy", "heart" };
 
 TamaState    tama;
@@ -434,7 +434,7 @@ void drawMenu() {
 // Portrait-only clock on AMOLED port (landscape removed — 368×448 is
 // near-square; rotating doesn't change the layout meaningfully).
 static HwTime  _clkTm;
-uint32_t       _clkLastRead = 0;   // zeroed by data.h on time-sync
+uint32_t       _clkLastRead = 0;   // zeroed by agent_link.h on time-sync
 static bool    _onUsb       = false;
 static void clockRefreshRtc() {
   if (millis() - _clkLastRead < 1000) return;
@@ -475,14 +475,6 @@ static void drawClock() {
   drawCenteredText(hms, CX, 160, 3, p.text,    p.bg);
   drawCenteredText(dl,  CX, SAFE_B - 21, 1, p.textDim, p.bg);
   spr.setTextSize(1);
-}
-
-PersonaState derive(const TamaState& s) {
-  if (!s.connected)            return P_IDLE;
-  if (s.sessionsWaiting > 0)   return P_ATTENTION;
-  if (s.recentlyCompleted)     return P_CELEBRATE;
-  if (s.sessionsRunning >= 3)  return P_BUSY;
-  return P_IDLE;   // connected, 0+ sessions, nothing urgent — hang out
 }
 
 void triggerOneShot(PersonaState s, uint32_t durMs) {
@@ -1006,7 +998,7 @@ void loop() {
 
   dataPoll(&tama);
   if (statsPollLevelUp()) triggerOneShot(P_CELEBRATE, 3000);
-  baseState = derive(tama);
+  baseState = agentDerive(tama);
 
   // After waking the screen, hold sleep for 12s so users see the wake-up
   // animation. Urgent states (attention, celebrate, busy) override this.

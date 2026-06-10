@@ -1,0 +1,9 @@
+{
+  "name": "buddy-agent-state",
+  "version": "0.1.0",
+  "description": "Claude-session state schema (AgentState), snapshot apply with events (time sync, tokens), and the persona selector. Pure C++ — no Arduino deps, native-testable.",
+  "license": "MIT",
+  "dependencies": [
+    { "owner": "bblanchon", "name": "ArduinoJson", "version": "^7.0.0" }
+  ]
+}
