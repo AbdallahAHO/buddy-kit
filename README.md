@@ -1,0 +1,55 @@
+# buddy-kit
+
+A lego-layered monorepo for ESP32 companion devices, extracted from
+[claude-desktop-buddy-esp32](https://github.com/vthinkxie/claude-desktop-buddy-esp32)
+(MIT, itself a port of anthropics/claude-desktop-buddy). The buddy app is the
+first composition; the layers are reusable for any desktop-to-gadget bridge
+(e-paper dashboards, HTTP/Worker-fed status displays, …).
+
+## Layers
+
+```
+apps/buddy          the composition: persona state machine, screens, input
+  lib/agent-state   AgentState schema + snapshot apply + persona selector (pure C++)
+  lib/line-bus      ByteSource pipe contract, newline framer, ack fan-out, cmd dispatch
+  lib/transport-ble NUS BLE bridge (NimBLE for C6, Bluedroid for S3, via -D flag)
+  lib/transport-usb USB CDC as a ByteSource
+  lib/file-push     desktop folder-push protocol, storage policy via FileSink
+  lib/faces         18 ASCII species + GIF character player (7-state persona contract)
+  hal/hw            display/input/power/imu/rtc/audio, stateless, board-flag driven
+  hal/boards        one capability header per board, selected via -DBOARD_*
+  vendor/           upstream-vendored driver libs (ES8311, XCA9554, DriveBus)
+```
+
+Dependency rule: everything points down, nothing points up. App-policy stays
+in the app (`app_commands.h`, `agent_link.h`, `faces_store.cpp` — single-TU
+glue headers); libs receive policy via injected contracts (FileSink,
+facesSpeciesLoad/Save, agentStateRandom).
+
+## Build & flash
+
+```bash
+cd apps/buddy
+pio run -e waveshare-esp32c6-touch-amoled-2-16 -t upload   # the C6 on the desk
+```
+
+Envs exist for all four Waveshare AMOLED boards; the C6 is the verified one.
+BLE stack and board are selected per env via `-DBUDDY_BLE_*` / `-DBOARD_*`.
+
+## Protocol testing without the desktop app
+
+```bash
+cd apps/buddy
+python tools/test_serial.py    # drive persona states over USB
+python tools/test_xfer.py      # stream a character (GIF set) over USB
+```
+
+Known quirk: on the C6's native USB, ~1% of chunk *acks* drop at 4 KB
+flash-erase boundaries (data is written correctly — only the reply notify is
+lost while the single core erases). BLE transfers are unaffected.
+
+## Roadmap
+
+- M2: native-env tests for line-bus framing/dispatch and agent-state
+- M3: Cloudflare Worker hub (Durable Object, POST /state + SSE) + transport-http
+- M4: e-paper dashboard app (XIAO 7.5") — second composition over the same legos
