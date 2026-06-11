@@ -1,0 +1,18 @@
+{
+  "name": "buddy-cloud",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --ip 0.0.0.0 --port 8787",
+    "deploy": "wrangler deploy",
+    "db:init:local": "wrangler d1 execute buddy_fleet --local --file=schema.sql",
+    "db:init:remote": "wrangler d1 execute buddy_fleet --remote --file=schema.sql"
+  },
+  "dependencies": {
+    "hono": "^4.6.14"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "wrangler": "^4.0.0"
+  }
+}

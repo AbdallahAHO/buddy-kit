@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "buddy-cloud",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "observability": { "enabled": true },
+
+  // One Durable Object per device: holds that device's command queue.
+  "durable_objects": {
+    "bindings": [{ "name": "HUB", "class_name": "DeviceHub" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DeviceHub"] }],
+
+  // Fleet registry + presence + firmware versions.
+  "d1_databases": [
+    { "binding": "DB", "database_name": "buddy_fleet", "database_id": "local-dev-placeholder" }
+  ],
+
+  // Firmware .bin blobs.
+  "r2_buckets": [
+    { "binding": "FW", "bucket_name": "buddy-firmware" }
+  ],
+
+  // Local-dev defaults. In production set these as secrets:
+  //   wrangler secret put DEVICE_KEY ; wrangler secret put ADMIN_KEY
+  "vars": {
+    "DEVICE_KEY": "dev-fleet-key",
+    "ADMIN_KEY": "dev-admin-key"
+  }
+}
