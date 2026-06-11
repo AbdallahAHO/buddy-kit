@@ -231,6 +231,7 @@ static void swipePrevPage() {
 const char* menuItems[] = { "settings", "turn off", "help", "about", "demo", "close" };
 const uint8_t MENU_N = 6;
 
+bool    wifiSetupOpen = false;   // QR pairing screen (drawWifiSetup)
 bool    settingsOpen = false;
 uint8_t settingsSel  = 0;
 const char* settingsItems[] = { "brightness", "sound", "bluetooth", "wifi", "led", "transcript", "clock rot", "ascii pet", "reset", "back" };
@@ -956,10 +957,12 @@ void setup() {
   hwInit();                  // Wire + expander + display + power + input + IMU + RTC + audio
   startBt();                 // BLE stays always-on
   appCommandsInit();         // ack fan-out (USB+BLE) + file-push sink
+  wifiLinkInit();
   applyBrightness();
   lastInteractMs = millis();
   statsLoad();
   settingsLoad();
+  if (settings().wifi && wifiLinkHasCreds()) wifiLinkConnect();
   petNameLoad();
   buddyInit();
 
@@ -992,6 +995,7 @@ void setup() {
 
 void loop() {
   hwInputUpdate();
+  wifiLinkTick();
   ;
   t++;
   uint32_t now = millis();

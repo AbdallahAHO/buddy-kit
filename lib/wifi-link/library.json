@@ -1,0 +1,8 @@
+{
+  "name": "buddy-wifi-link",
+  "version": "0.1.0",
+  "description": "Wi-Fi connectivity + provisioning lifecycle: SoftAP captive portal (QR-joinable AP, scan/save/status endpoints), async join state machine, creds via injected store contract. Transports (HTTP/SSE) ride on top.",
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

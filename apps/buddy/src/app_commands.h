@@ -7,6 +7,7 @@
 #include "file_push.h"
 #include "transport_usb.h"
 #include "transport_ble.h"
+#include "wifi_link.h"
 
 // Defined later in main.cpp's TU.
 extern bool buddyMode, gifAvailable;
@@ -169,13 +170,14 @@ static bool cmdStatus(JsonDocument&, void*) {
   int iBat = hb.mA;
   int vBus = hb.usbPresent ? 5000 : 0;
   int pct  = hb.pct;
-  char b[320];
+  char b[400];
   int len = snprintf(b, sizeof(b),
     "{\"ack\":\"status\",\"ok\":true,\"n\":0,\"data\":{"
     "\"name\":\"%s\",\"owner\":\"%s\",\"sec\":%s,"
     "\"bat\":{\"pct\":%d,\"mV\":%d,\"mA\":%d,\"usb\":%s},"
     "\"sys\":{\"up\":%lu,\"heap\":%u,\"fsFree\":%lu,\"fsTotal\":%lu},"
-    "\"stats\":{\"appr\":%u,\"deny\":%u,\"vel\":%u,\"nap\":%lu,\"lvl\":%u}"
+    "\"stats\":{\"appr\":%u,\"deny\":%u,\"vel\":%u,\"nap\":%lu,\"lvl\":%u},"
+    "\"wifi\":{\"state\":\"%s\",\"ssid\":\"%s\",\"ip\":\"%s\"}"
     "}}\n",
     petName(), ownerName(), bleSecure() ? "true" : "false",
     pct, vBat, iBat, (vBus > 4000) ? "true" : "false",
@@ -183,9 +185,34 @@ static bool cmdStatus(JsonDocument&, void*) {
     (unsigned long)(LittleFS.totalBytes() - LittleFS.usedBytes()),
     (unsigned long)LittleFS.totalBytes(),
     stats().approvals, stats().denials, statsMedianVelocity(),
-    (unsigned long)stats().napSeconds, stats().level
+    (unsigned long)stats().napSeconds, stats().level,
+    (const char*[]){"off","portal","joining","online","failed"}[wifiLinkState()],
+    wifiLinkSsid(), wifiLinkIp()
   );
   gLineOut.write((const uint8_t*)b, len);
+  return true;
+}
+
+// {"cmd":"wifi","ssid":"…","pass":"…"} → join now (persists on success)
+// {"cmd":"wifi","portal":true}         → (re)enter pairing mode
+// {"cmd":"wifi","forget":true}         → wipe creds + radio off
+static bool cmdWifi(JsonDocument& doc, void*) {
+  if (doc["forget"] | false) {
+    wifiLinkForget();
+    lineBusAck(gLineOut, "wifi", true);
+    return true;
+  }
+  if (doc["portal"] | false) {
+    wifiLinkStartPortal();
+    extern bool wifiSetupOpen;     // main.cpp shows the QR screen
+    wifiSetupOpen = true;
+    lineBusAck(gLineOut, "wifi", true);
+    return true;
+  }
+  const char* ssid = doc["ssid"];
+  if (!ssid || !ssid[0]) { lineBusAck(gLineOut, "wifi", false); return true; }
+  wifiLinkJoin(ssid, doc["pass"] | "");
+  lineBusAck(gLineOut, "wifi", true);
   return true;
 }
 
@@ -195,6 +222,7 @@ static const CmdEntry APP_CMDS[] = {
   { "unpair",  cmdUnpair  },
   { "owner",   cmdOwner   },
   { "status",  cmdStatus  },
+  { "wifi",    cmdWifi    },
 };
 
 // Called from data.h for any incoming JSON with a "cmd" key. Returns true
