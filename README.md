@@ -70,6 +70,15 @@ Settings → reset → **forget wifi** wipes it. Scriptable channel:
 `{"cmd":"wifi","ssid":"…","pass":"…"}` (also `"portal":true` /
 `"forget":true`) over USB or BLE.
 
+## Cloud fleet (`cloud/`)
+
+A Cloudflare Worker is the device hub *and* a fleet manager: device registry,
+firmware storage (R2), broadcast OTA, and a dashboard. `pnpm run dev` in
+`cloud/` runs it locally on the LAN; point a device at it with
+`{"cmd":"hub","url":"http://<lan-ip>:8787","token":"dev-fleet-key"}` and it
+self-registers. Upload a firmware version and broadcast to update the whole
+fleet over the air. See [docs/cloud.md](docs/cloud.md).
+
 ## Hub over HTTP
 
 `{"cmd":"hub","url":"http://host:8787"}` points the device at a hub API it

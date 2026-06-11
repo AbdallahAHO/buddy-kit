@@ -11,6 +11,7 @@ Cloudflare Worker instead of an AMOLED pet fed by BLE).
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
+│ cloud/      — Cloudflare Worker: fleet hub + OTA (see cloud.md)│
 │ apps/buddy — composition root (~470-line main.cpp)           │
 │   app_state.h      the store: shared state, one header       │
 │   screens/         organisms: one file per screen            │

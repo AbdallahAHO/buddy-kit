@@ -11,6 +11,7 @@ Reading order if you're new:
 | [protocol.md](protocol.md) | The wire protocol: snapshots, commands/acks, file push, the hub HTTP contract |
 | [connectivity.md](connectivity.md) | Wi-Fi pairing (QR + captive portal), wifi-link lifecycle, the HTTP hub transport |
 | [ota.md](ota.md) | Wireless firmware updates: HTTP pull + ArduinoOTA push, the dual-OTA partition layout, rollback |
+| [cloud.md](cloud.md) | The Cloudflare Worker: fleet hub, device registry, firmware storage, broadcast OTA, dashboard |
 | [hardware.md](hardware.md) | Boards, HAL pattern, partition table (and why it's shaped that way), USB quirks, flash/recovery |
 | [extending.md](extending.md) | Recipes: add a screen, a menu row, a transport, a face, a board, an app |
 

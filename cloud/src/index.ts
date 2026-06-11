@@ -11,6 +11,7 @@ type Env = {
   FW: R2Bucket;
   DEVICE_KEY: string;
   ADMIN_KEY: string;
+  PUBLIC_URL?: string;
 };
 
 const app = new Hono<{ Bindings: Env }>();
@@ -143,7 +144,9 @@ app.post("/v1/ota/broadcast", adminAuth, async (c) => {
   const fw = await c.env.DB.prepare(`SELECT 1 FROM firmware WHERE version=?1`).bind(version).first();
   if (!fw) return c.text("no such firmware version", 404);
 
-  const origin = new URL(c.req.url).origin;
+  // Prefer an explicit public URL so OTA links are reachable by devices even
+  // when the admin call came from localhost (dev) or a different origin.
+  const origin = c.env.PUBLIC_URL || new URL(c.req.url).origin;
   const url = `${origin}/fw/${version}?t=${c.env.DEVICE_KEY}`;
   const cmd = JSON.stringify({ cmd: "ota", url });
 

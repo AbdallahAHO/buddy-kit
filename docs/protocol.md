@@ -78,6 +78,11 @@ GET  <base>/poll   → 200 + zero-or-more \n-terminated JSON lines (or 204)
 POST <base>/push   ← \n-terminated JSON lines from the device (acks, decisions)
 ```
 
+When the hub is a fleet server (see cloud.md), the device also sends
+`Authorization: Bearer <token>` and identity headers `X-Device-Id` /
+`X-Model` / `X-Fw` on every poll/push, set via `{"cmd":"hub","url":…,
+"token":…}`. The plain local hub ignores them.
+
 That's the whole contract — an M3 Cloudflare Worker only needs these two
 routes. Local dev hub: `python tools/test_hub.py` (+ `POST /queue` to
 enqueue lines for the device).

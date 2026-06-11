@@ -41,6 +41,7 @@ commit:**
 | any cmd/ack, snapshot fields, file push, hub routes | `docs/protocol.md` |
 | wifi-link, portal/QR pairing, transport-http | `docs/connectivity.md` |
 | OTA (lib/ota, dev_ota, partition table) | `docs/ota.md` |
+| cloud Worker (fleet API, hub, dashboard, deploy) | `docs/cloud.md` |
 | boards, partition table, NVS keys, USB/display quirks, memory | `docs/hardware.md` |
 | anything that changes a recipe | `docs/extending.md` |
 | repo layout / quickstart | `README.md` |
@@ -81,7 +82,8 @@ physical checklist in `docs/extending.md`.
   workspace `../CLAUDE.md` and `../boards/wsc6-amoled-2.16/`. The C6's
   factory restore is `../boards/wsc6-amoled-2.16/board.py restore`.
 - Upstream reference clone (read-only): `../reference/claude-desktop-buddy-esp32/`.
-- Roadmap: M2 native tests → M3 Cloudflare Worker hub (speaks the two-route
-  contract in `docs/protocol.md`) → M4 e-paper dashboard app.
+- Roadmap: M3 cloud fleet hub DONE (`cloud/`, docs/cloud.md) — verified e2e
+  over `wrangler dev`; prod deploy needs device-side HTTPS (WiFiClientSecure).
+  Remaining: M2 native tests, M4 e-paper dashboard app, device HTTPS for prod.
 - House style: conventional commits, no AI attribution, comments explain
   constraints not narration.
