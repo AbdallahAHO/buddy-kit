@@ -26,7 +26,10 @@ void overlayOpen(const Overlay& o) {
 void overlayClose() {
   _active = nullptr;
   _armedIdx = 0xFF;
-  characterInvalidate();
+  // Full repaint: the panel overdrew a band that neither the buddy nor the
+  // HUD owns, so partial invalidation leaves ghost pixels behind.
+  applyDisplayMode();
+  if (buddyMode) buddyInvalidate();
 }
 
 void overlayNext() {

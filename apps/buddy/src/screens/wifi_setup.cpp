@@ -41,7 +41,8 @@ void wifiSetupDraw(Arduino_GFX& g) {
 void wifiSetupClose() {
   wifiSetupOpen = false;
   wifiLinkStopPortal();
-  characterInvalidate();
+  // The QR screen painted the full canvas — clear it all on the way out.
+  applyDisplayMode();
   if (buddyMode) buddyInvalidate();
 }
 

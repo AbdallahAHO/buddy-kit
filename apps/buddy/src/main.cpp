@@ -342,6 +342,10 @@ void loop() {
   static uint32_t lastPasskey = 0;
   uint32_t pk = blePasskey();
   if (pk && !lastPasskey) { wake(); beep(1800, 60); }
+  if (!pk && lastPasskey) {   // passkey dismissed — it painted the full canvas
+    applyDisplayMode();
+    if (buddyMode) buddyInvalidate();
+  }
   lastPasskey = pk;
 
   if (napping || screenOff) {
