@@ -213,6 +213,20 @@ void loop() {
   hwInputUpdate();
   wifiLinkTick();
   jigglerTick(millis());
+  // Wi-Fi resilience: a failed boot join (router rebooting, out of range)
+  // previously parked the radio OFF forever. Retry every 5 min while the
+  // setting is on and creds exist.
+  {
+    static uint32_t _wifiRetryAt = 0;
+    if (settings().wifi && wifiLinkHasCreds() && wifiLinkState() == WIFI_LINK_OFF) {
+      if ((int32_t)(millis() - _wifiRetryAt) >= 0) {
+        _wifiRetryAt = millis() + 5UL * 60UL * 1000UL;
+        wifiLinkConnect();
+      }
+    } else {
+      _wifiRetryAt = millis();   // armed: first retry fires 0s after entering OFF
+    }
+  }
   // A successful join turns the wifi setting on, so provisioning via the
   // portal or cmd survives reboot without a separate toggle step.
   static WifiLinkState _lastWifiState = WIFI_LINK_OFF;

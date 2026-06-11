@@ -18,7 +18,10 @@ not a transport) and **transport-http** (a ByteSource that rides on it).
 ```
 
 All transitions happen in `wifiLinkTick()` — call it every loop. On a
-dropped link the device silently rejoins once.
+dropped link the device silently rejoins once. The app adds boot
+resilience on top: while the wifi setting is on and creds exist, an OFF
+radio retries the join every 5 minutes (first retry immediate), so a
+router reboot or a failed boot join can't park the device offline forever.
 
 ## Pairing UX (the QR flow)
 
