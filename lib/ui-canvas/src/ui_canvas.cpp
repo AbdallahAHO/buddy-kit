@@ -80,3 +80,31 @@ bool uiQr(Arduino_GFX& g, const char* text, int centerX, int topY, int scale) {
         g.fillRect(x0 + x*scale, topY + y*scale, scale, scale, BLACK);
   return true;
 }
+
+int uiListPanelX(int canvasW) { return (canvasW - UI_LIST_W) / 2; }
+int uiListPanelY(int canvasH, uint8_t n) {
+  return (canvasH - (16 + n * UI_LIST_ROW_H + UI_LIST_HINT_H)) / 2;
+}
+int uiListRowsTop(int canvasH, uint8_t n) { return uiListPanelY(canvasH, n) + 8; }
+
+void uiListPanel(Arduino_GFX& g, int canvasW, int canvasH, const ListPanelProps& p) {
+  const Palette& pal = *p.pal;
+  int mw = UI_LIST_W, mh = 16 + p.n * UI_LIST_ROW_H + UI_LIST_HINT_H;
+  int mx = uiListPanelX(canvasW), my = uiListPanelY(canvasH, p.n);
+  g.fillRoundRect(mx, my, mw, mh, 4, PANEL);
+  g.drawRoundRect(mx, my, mw, mh, 4, p.borderColor);
+  g.setTextSize(1);
+  for (uint8_t i = 0; i < p.n; i++) {
+    bool sel = (i == p.sel);
+    g.setTextColor(sel ? pal.text : pal.textDim, PANEL);
+    g.setCursor(mx + 6, my + 8 + i * UI_LIST_ROW_H);
+    g.print(sel ? "> " : "  ");
+    g.print(p.rows[i].label);
+    if (p.rows[i].value) {
+      g.setCursor(mx + mw - 36, my + 8 + i * UI_LIST_ROW_H);
+      g.setTextColor(p.rows[i].valueColor, PANEL);
+      g.print(p.rows[i].value);
+    }
+  }
+  uiMenuHints(g, pal, mx, mw, my + mh - 12, p.hintA, p.hintB);
+}

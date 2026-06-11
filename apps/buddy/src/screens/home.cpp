@@ -8,6 +8,7 @@
 #include "character.h"
 #include "stats.h"
 #include "agent_link.h"
+#include "../overlays.h"
 #include "hw/hw.h"
 
 // Portrait-only clock on AMOLED port (landscape removed — 368×448 is
@@ -107,7 +108,7 @@ void homeHudDraw(Arduino_GFX& g) {
 
   // Menu/settings/reset should hide the HUD strip underneath — panels are
   // centered and don't cover the bottom 34 px on their own.
-  if (menuOpen || settingsOpen || resetOpen) return;
+  if (overlayActive()) return;
 
   if (tama.lineGen != lastLineGen) { msgScroll = 0; lastLineGen = tama.lineGen; wake(); }
 

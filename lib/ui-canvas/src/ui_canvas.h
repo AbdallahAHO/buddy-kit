@@ -37,6 +37,37 @@ uint8_t uiWrap(const char* in, char out[][48], uint8_t maxRows, uint8_t width);
 void uiMenuHints(Arduino_GFX& g, const Palette& p, int mx, int mw, int hy,
                  const char* downLbl = "A", const char* rightLbl = "B");
 
+// ── Molecules ───────────────────────────────────────────────────────────
+// List panel: the one overlay widget (menus, settings, confirm lists).
+// Fully props-driven; selection, labels, values and colors come from the
+// caller. Geometry matches the original drawMenu/drawSettings/drawReset.
+const int UI_LIST_HINT_H = 14;
+const int UI_LIST_ROW_H  = 14;
+const int UI_LIST_W      = 118;
+
+struct ListRowProps {
+  const char* label;
+  const char* value;        // nullptr = no value column
+  uint16_t    valueColor;
+};
+
+struct ListPanelProps {
+  const ListRowProps* rows;
+  uint8_t  n;
+  uint8_t  sel;
+  uint16_t borderColor;     // p.textDim normally, HOT for destructive lists
+  const char* hintA;        // footer hints, e.g. "A"/"B" or "Next"/"Change"
+  const char* hintB;
+  const Palette* pal;
+};
+
+void uiListPanel(Arduino_GFX& g, int canvasW, int canvasH, const ListPanelProps& p);
+
+// Panel geometry helpers so touch hit-testing can mirror the layout.
+int uiListPanelX(int canvasW);
+int uiListPanelY(int canvasH, uint8_t nRows);
+int uiListRowsTop(int canvasH, uint8_t nRows);
+
 // QR code (version 3, ECC_LOW — fits short payloads like WIFI: strings),
 // drawn black-on-white with a quiet zone, horizontally centered on centerX.
 // Returns false if the text doesn't fit.

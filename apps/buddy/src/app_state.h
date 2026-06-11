@@ -24,7 +24,7 @@ extern const char* stateNames[];
 
 // UI mode + overlays
 extern uint8_t displayMode;
-extern bool menuOpen, settingsOpen, resetOpen, wifiSetupOpen;
+extern bool wifiSetupOpen;   // (menu overlays live in overlays.h)
 extern uint8_t brightLevel;
 extern bool screenOff, napping;
 
@@ -36,8 +36,14 @@ extern uint32_t promptArrivedMs;
 extern bool buddyMode;        // ASCII species vs GIF character
 extern bool gifAvailable;     // a character set is installed on LittleFS
 
-// App actions
-void wake();                  // screen wake + interaction stamp (main.cpp)
+// App actions (defined in main.cpp)
+void wake();                  // screen wake + interaction stamp
+void beep(uint16_t freq, uint16_t durMs);   // sound-setting-gated hwBeep
+void applyBrightness();
+void applyDisplayMode();
+void nextPet();
+void prevPet();
+void triggerOneShot(PersonaState s, uint32_t durMs);
 
 // Misc shared
 extern char btName[16];       // advertised BLE name, shown on the info page
