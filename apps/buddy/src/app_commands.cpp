@@ -231,23 +231,26 @@ static bool cmdWifi(JsonDocument& doc, void*) {
 
 // {"cmd":"hub","url":"http://host:port"} → poll that hub over Wi-Fi (persisted)
 // {"cmd":"hub","off":true}               → stop + forget the hub
-static void _hubSave(const char* url) {
+static void _hubSave(const char* url, const char* token) {
   Preferences p;
   p.begin("buddy", false);
   if (url && url[0]) p.putString("huburl", url); else p.remove("huburl");
+  if (token) { if (token[0]) p.putString("hubtok", token); else p.remove("hubtok"); }
   p.end();
 }
 
 static bool cmdHub(JsonDocument& doc, void*) {
   if (doc["off"] | false) {
     httpTransportStop();
-    _hubSave(nullptr);
+    _hubSave(nullptr, "");
     lineBusAck(gLineOut, "hub", true);
     return true;
   }
   const char* url = doc["url"];
   if (!url || strncmp(url, "http", 4) != 0) { lineBusAck(gLineOut, "hub", false); return true; }
-  _hubSave(url);
+  const char* token = doc["token"];   // optional fleet auth token
+  if (token) httpTransportSetToken(token);
+  _hubSave(url, token);
   httpTransportStart(url);
   lineBusAck(gLineOut, "hub", true);
   return true;
@@ -301,9 +304,15 @@ void appCommandsInit() {
   gLineOut.add(&bleByteSource());
   gLineOut.add(&httpByteSource());
   filePushInit(&APP_FILE_SINK, &gLineOut);
+#ifndef BUDDY_FW_VERSION
+#define BUDDY_FW_VERSION "dev"
+#endif
+  httpTransportSetIdentity(bleDeviceName(), BOARD_MODEL_LINE1, BUDDY_FW_VERSION);
   Preferences p;
   p.begin("buddy", true);
   String hub = p.getString("huburl", "");
+  String tok = p.getString("hubtok", "");
   p.end();
+  if (tok.length()) httpTransportSetToken(tok.c_str());
   if (hub.length()) httpTransportStart(hub.c_str());
 }

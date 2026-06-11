@@ -12,6 +12,8 @@
 //   POST /push  ← body = \n-terminated JSON lines from the device
 void httpTransportStart(const char* baseUrl);  // idempotent; restarts on new url
 void httpTransportStop();
+void httpTransportSetToken(const char* token);                 // Bearer auth (hub fleet key)
+void httpTransportSetIdentity(const char* id, const char* model, const char* fw);
 bool httpTransportConfigured();
 bool httpTransportHealthy();   // last poll round-trip succeeded
 const char* httpTransportUrl();

@@ -4,6 +4,10 @@
 #include "wifi_link.h"
 
 static char _url[96] = "";
+static char _token[80] = "";
+static char _devId[24] = "";
+static char _model[40] = "";
+static char _fw[16] = "";
 static volatile bool _healthy = false;
 static TaskHandle_t  _task = nullptr;
 
@@ -17,6 +21,15 @@ static uint8_t  _tx[TX_CAP];
 static volatile size_t _txHead = 0, _txTail = 0;
 
 static const uint32_t POLL_MS = 1000;
+
+// Auth + identity headers on every hub request. The Worker authenticates the
+// Bearer token and auto-registers/refreshes presence from the identity.
+static void _addHeaders(HTTPClient& http) {
+  if (_token[0]) { char a[96]; snprintf(a, sizeof(a), "Bearer %s", _token); http.addHeader("Authorization", a); }
+  if (_devId[0]) http.addHeader("X-Device-Id", _devId);
+  if (_model[0]) http.addHeader("X-Model", _model);
+  if (_fw[0])    http.addHeader("X-Fw", _fw);
+}
 
 static void _rxPush(const uint8_t* p, size_t n) {
   for (size_t i = 0; i < n; i++) {
@@ -74,6 +87,7 @@ static void _pollTask(void*) {
       char url[112]; snprintf(url, sizeof(url), "%s/push", _url);
       if (http.begin(url)) {
         http.addHeader("Content-Type", "application/x-ndjson");
+        _addHeaders(http);
         int code = http.POST(body, n);
         ok = code > 0 && code < 300;
         http.end();
@@ -84,6 +98,7 @@ static void _pollTask(void*) {
     {
       char url[112]; snprintf(url, sizeof(url), "%s/poll", _url);
       if (http.begin(url)) {
+        _addHeaders(http);
         int code = http.GET();
         if (code == 200) {
           String body = http.getString();
@@ -111,6 +126,15 @@ void httpTransportStart(const char* baseUrl) {
 void httpTransportStop() {
   _url[0] = 0;
   _healthy = false;
+}
+
+void httpTransportSetToken(const char* token) {
+  strncpy(_token, token ? token : "", sizeof(_token)-1); _token[sizeof(_token)-1] = 0;
+}
+void httpTransportSetIdentity(const char* id, const char* model, const char* fw) {
+  strncpy(_devId, id ? id : "", sizeof(_devId)-1);  _devId[sizeof(_devId)-1] = 0;
+  strncpy(_model, model ? model : "", sizeof(_model)-1); _model[sizeof(_model)-1] = 0;
+  strncpy(_fw, fw ? fw : "", sizeof(_fw)-1); _fw[sizeof(_fw)-1] = 0;
 }
 
 bool httpTransportConfigured() { return _url[0] != 0; }
