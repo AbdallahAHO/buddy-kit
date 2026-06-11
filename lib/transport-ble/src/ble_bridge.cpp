@@ -88,7 +88,12 @@ class SecCallbacks : public BLESecurityCallbacks {
   }
 };
 
+static char _deviceName[24] = "Claude";
+const char* bleDeviceName() { return _deviceName; }
+
 void bleInit(const char* deviceName) {
+  strncpy(_deviceName, deviceName, sizeof(_deviceName)-1);
+  _deviceName[sizeof(_deviceName)-1] = 0;
   BLEDevice::init(deviceName);
   // Request the biggest MTU we can get. macOS negotiates to 185 typically.
   BLEDevice::setMTU(517);

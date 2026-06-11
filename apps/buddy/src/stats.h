@@ -25,6 +25,7 @@ struct Settings {
   bool wifi;     // gates Wi-Fi auto-connect on boot
   bool led;
   bool hud;
+  bool jiggler;  // BLE HID mouse jiggler mode
   uint8_t clockRot;  // 0=auto 1=portrait 2=landscape
 };
 

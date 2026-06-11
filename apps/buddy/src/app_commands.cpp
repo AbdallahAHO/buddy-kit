@@ -15,6 +15,8 @@
 #include "buddy.h"
 #include "ble_bridge.h"
 #include "hw/hw.h"
+#include "hid_mouse.h"
+#include "jiggler.h"
 
 LineOut gLineOut;
 
@@ -182,7 +184,8 @@ static bool cmdStatus(JsonDocument&, void*) {
     "\"sys\":{\"up\":%lu,\"heap\":%u,\"fsFree\":%lu,\"fsTotal\":%lu},"
     "\"stats\":{\"appr\":%u,\"deny\":%u,\"vel\":%u,\"nap\":%lu,\"lvl\":%u},"
     "\"wifi\":{\"state\":\"%s\",\"ssid\":\"%s\",\"ip\":\"%s\"},"
-    "\"hub\":{\"url\":\"%s\",\"ok\":%s}"
+    "\"hub\":{\"url\":\"%s\",\"ok\":%s},"
+    "\"jiggler\":{\"on\":%s,\"hid\":%s}"
     "}}\n",
     petName(), ownerName(), bleSecure() ? "true" : "false",
     pct, vBat, iBat, (vBus > 4000) ? "true" : "false",
@@ -193,7 +196,8 @@ static bool cmdStatus(JsonDocument&, void*) {
     (unsigned long)stats().napSeconds, stats().level,
     (const char*[]){"off","portal","joining","online","failed"}[wifiLinkState()],
     wifiLinkSsid(), wifiLinkIp(),
-    httpTransportUrl(), httpTransportHealthy() ? "true" : "false"
+    httpTransportUrl(), httpTransportHealthy() ? "true" : "false",
+    settings().jiggler ? "true" : "false", hidMouseConnected() ? "true" : "false"
   );
   gLineOut.write((const uint8_t*)b, len);
   return true;
@@ -245,6 +249,16 @@ static bool cmdHub(JsonDocument& doc, void*) {
   return true;
 }
 
+// {"cmd":"jiggler","on":true|false} → toggle the BLE mouse jiggler mode
+static bool cmdJiggler(JsonDocument& doc, void*) {
+  if (!doc["on"].is<bool>()) { lineBusAck(gLineOut, "jiggler", false); return true; }
+  settings().jiggler = doc["on"].as<bool>();
+  jigglerApply(settings().jiggler);
+  settingsSave();
+  lineBusAck(gLineOut, "jiggler", true);
+  return true;
+}
+
 static const CmdEntry APP_CMDS[] = {
   { "name",    cmdName    },
   { "species", cmdSpecies },
@@ -253,6 +267,7 @@ static const CmdEntry APP_CMDS[] = {
   { "status",  cmdStatus  },
   { "wifi",    cmdWifi    },
   { "hub",     cmdHub     },
+  { "jiggler", cmdJiggler },
 };
 
 bool appCommand(JsonDocument& doc) {

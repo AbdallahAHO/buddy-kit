@@ -38,6 +38,8 @@ static void startBt() {
 #include "screens/wifi_setup.h"
 #include "overlays.h"
 #include "input_router.h"
+#include "hid_mouse.h"
+#include "jiggler.h"
 #include "wifi_link.h"
 #include "ui_canvas.h"
 // LED replaced by AMOLED border-flash via hwBorderAlert() — no GPIO LED.
@@ -168,6 +170,7 @@ void setup() {
   Serial.setRxBufferSize(2048);
   hwInit();                  // Wire + expander + display + power + input + IMU + RTC + audio
   startBt();                 // BLE stays always-on
+  hidMouseInit();            // HID mouse service on the same GATT server
   appCommandsInit();         // ack fan-out (USB+BLE) + file-push sink
   wifiLinkInit();
   applyBrightness();
@@ -175,6 +178,7 @@ void setup() {
   statsLoad();
   settingsLoad();
   if (settings().wifi && wifiLinkHasCreds()) wifiLinkConnect();
+  jigglerApply(settings().jiggler);
   petNameLoad();
   buddyInit();
 
@@ -208,6 +212,7 @@ void setup() {
 void loop() {
   hwInputUpdate();
   wifiLinkTick();
+  jigglerTick(millis());
   // A successful join turns the wifi setting on, so provisioning via the
   // portal or cmd survives reboot without a separate toggle step.
   static WifiLinkState _lastWifiState = WIFI_LINK_OFF;

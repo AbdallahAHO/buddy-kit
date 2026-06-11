@@ -158,7 +158,7 @@ void statsFactoryWipe() {
 
 // --- Settings ----------------------------------------------------------
 
-static Settings _settings = { true, true, false, true, true, 0 };
+static Settings _settings = { true, true, false, true, true, false, 0 };
 
 void settingsLoad() {
   _prefs.begin("buddy", true);
@@ -167,6 +167,7 @@ void settingsLoad() {
   _settings.wifi  = _prefs.getBool("s_wifi",false);
   _settings.led   = _prefs.getBool("s_led", true);
   _settings.hud      = _prefs.getBool("s_hud", true);
+  _settings.jiggler  = _prefs.getBool("s_jig", false);
   _settings.clockRot = _prefs.getUChar("s_crot", 0);
   if (_settings.clockRot > 2) _settings.clockRot = 0;
   _prefs.end();
@@ -179,6 +180,7 @@ void settingsSave() {
   _prefs.putBool("s_wifi",_settings.wifi);
   _prefs.putBool("s_led", _settings.led);
   _prefs.putBool("s_hud", _settings.hud);
+  _prefs.putBool("s_jig", _settings.jiggler);
   _prefs.putUChar("s_crot", _settings.clockRot);
   _prefs.end();
 }

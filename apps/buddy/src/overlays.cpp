@@ -7,6 +7,8 @@
 #include "buddy.h"
 #include "ble_bridge.h"
 #include "wifi_link.h"
+#include "hid_mouse.h"
+#include "jiggler.h"
 #include "hw/hw.h"
 #include "screens/info.h"
 
@@ -108,6 +110,11 @@ static void vBt(char* b, size_t c, uint16_t* col)    { vOnOff(b, c, col, setting
 static void vWifi(char* b, size_t c, uint16_t* col)  { vOnOff(b, c, col, settings().wifi); }
 static void vLed(char* b, size_t c, uint16_t* col)   { vOnOff(b, c, col, settings().led); }
 static void vHud(char* b, size_t c, uint16_t* col)   { vOnOff(b, c, col, settings().hud); }
+static void vJiggler(char* b, size_t c, uint16_t* col) {
+  if (!settings().jiggler) { snprintf(b, c, "off"); return; }
+  if (hidMouseConnected()) { snprintf(b, c, " up"); *col = GREEN; }
+  else snprintf(b, c, "adv");
+}
 static void vWifiState(char* b, size_t c, uint16_t* col) {
   WifiLinkState ws = wifiLinkState();
   if (ws == WIFI_LINK_ONLINE)       { snprintf(b, c, " up"); *col = GREEN; }
@@ -130,6 +137,12 @@ static bool cBt(uint8_t) {
   // Stored preference only — BLE stays live (tearing down the stack isn't
   // reliable in the Arduino BLE libs).
   settings().bt = !settings().bt; settingsSave(); return true;
+}
+static bool cJiggler(uint8_t) {
+  settings().jiggler = !settings().jiggler;
+  jigglerApply(settings().jiggler);
+  settingsSave();
+  return true;
 }
 static bool cWifi(uint8_t) {
   Settings& s = settings();
@@ -154,6 +167,7 @@ static const OverlayItem SETTINGS_ITEMS[] = {
   { "brightness", vBright,    cBright,   false },
   { "sound",      vSound,     cSound,    false },
   { "bluetooth",  vBt,        cBt,       false },
+  { "jiggler",    vJiggler,   cJiggler,  false },
   { "wifi",       vWifi,      cWifi,     false },
   { "wifi setup", vWifiState, cWifiSetup,false },
   { "led",        vLed,       cLed,      false },
@@ -163,7 +177,7 @@ static const OverlayItem SETTINGS_ITEMS[] = {
   { "reset",      nullptr,    cReset,    false },
   { "back",       nullptr,    cClose,    false },
 };
-const Overlay SETTINGS_OVERLAY = { SETTINGS_ITEMS, 11, 0, "Next", "Change" };
+const Overlay SETTINGS_OVERLAY = { SETTINGS_ITEMS, 12, 0, "Next", "Change" };
 
 // -- main menu rows --
 

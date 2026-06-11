@@ -32,7 +32,7 @@ failure). Buddy-kit additions are marked ★.
 
 | Command | Effect |
 |---|---|
-| `{"cmd":"status"}` | full status blob: name/owner/sec, bat, sys, stats, ★wifi `{state,ssid,ip}`, ★hub `{url,ok}` |
+| `{"cmd":"status"}` | full status blob: name/owner/sec, bat, sys, stats, ★wifi `{state,ssid,ip}`, ★hub `{url,ok}`, ★jiggler `{on,hid}` |
 | `{"cmd":"name","name":…}` | set pet name (sanitized, NVS) |
 | `{"cmd":"owner","name":…}` | set owner name |
 | `{"cmd":"species","idx":n}` | select ASCII species; `255` = GIF mode |
@@ -43,6 +43,7 @@ failure). Buddy-kit additions are marked ★.
 | ★`{"cmd":"wifi","forget":true}` | wipe creds, radio off |
 | ★`{"cmd":"hub","url":"http://…"}` | poll that hub (persisted, survives reboot) |
 | ★`{"cmd":"hub","off":true}` | stop + forget the hub |
+| ★`{"cmd":"jiggler","on":bool}` | BLE mouse jiggler mode (persisted); status reports `jiggler {on,hid}` |
 
 ## Folder push (character install)
 
@@ -55,6 +56,17 @@ control** (flash erases block; don't batch). The fit check runs before
 anything is wiped; only one character set lives on LittleFS at a time
 (`/characters/<name>/`, wipe-all on begin). `char_end` activates the set
 (manifest.json → GIF player) and flips species NVS to GIF mode.
+
+## ★ BLE HID mouse (jiggler mode)
+
+`lib/hid-mouse` attaches a HID-over-GATT mouse to the same GATT server and
+bond store as the NUS bridge — one device identity. While enabled
+(Settings → jiggler, or the cmd above) the advertisement gains the HID
+service UUID (0x1812) + mouse appearance, so macOS Bluetooth settings lists
+the device as an input device; pairing uses the same on-screen passkey.
+The app's jiggle policy: ±1 px net-zero nudge every 30 s while a host is
+subscribed. Settings value column shows `off` / `adv` / ` up` (host
+connected). NimBLE builds only; Bluedroid gets no-op stubs.
 
 ## ★ Hub HTTP contract (lib/transport-http)
 
