@@ -39,6 +39,8 @@ static void startBt() {
 #include "stats.h"
 #include "file_push.h"
 #include "app_commands.h"
+#include "wifi_link.h"
+#include "qrcode.h"
 const int W = HW_W;
 const int H = HW_H;
 const int CX = W / 2;
@@ -234,13 +236,13 @@ const uint8_t MENU_N = 6;
 bool    wifiSetupOpen = false;   // QR pairing screen (drawWifiSetup)
 bool    settingsOpen = false;
 uint8_t settingsSel  = 0;
-const char* settingsItems[] = { "brightness", "sound", "bluetooth", "wifi", "led", "transcript", "clock rot", "ascii pet", "reset", "back" };
-const uint8_t SETTINGS_N = 10;
+const char* settingsItems[] = { "brightness", "sound", "bluetooth", "wifi", "wifi setup", "led", "transcript", "clock rot", "ascii pet", "reset", "back" };
+const uint8_t SETTINGS_N = 11;
 
 bool    resetOpen = false;
 uint8_t resetSel  = 0;
-const char* resetItems[] = { "delete char", "factory reset", "back" };
-const uint8_t RESET_N = 3;
+const char* resetItems[] = { "delete char", "forget wifi", "factory reset", "back" };
+const uint8_t RESET_N = 4;
 static uint32_t resetConfirmUntil = 0;
 static uint8_t  resetConfirmIdx = 0xFF;
 
@@ -259,13 +261,22 @@ static void applySetting(uint8_t idx) {
       // hard-off someday, stop advertising via BLEDevice::getAdvertising().
       s.bt = !s.bt;
       break;
-    case 3: s.wifi = !s.wifi; break;   // stored only — no WiFi stack linked
-    case 4: s.led = !s.led; break;
-    case 5: s.hud = !s.hud; break;
-    case 6: s.clockRot = (s.clockRot + 1) % 3; break;
-    case 7: nextPet(); return;
-    case 8: resetOpen = true; resetSel = 0; resetConfirmIdx = 0xFF; return;
-    case 9: settingsOpen = false; characterInvalidate(); return;
+    case 3:
+      s.wifi = !s.wifi;
+      if (s.wifi && wifiLinkHasCreds()) wifiLinkConnect();
+      else if (!s.wifi) wifiLinkDisconnect();
+      break;
+    case 4:   // wifi setup: QR pairing screen + captive portal
+      settingsOpen = false;
+      wifiLinkStartPortal();
+      wifiSetupOpen = true;
+      return;
+    case 5: s.led = !s.led; break;
+    case 6: s.hud = !s.hud; break;
+    case 7: s.clockRot = (s.clockRot + 1) % 3; break;
+    case 8: nextPet(); return;
+    case 9: resetOpen = true; resetSel = 0; resetConfirmIdx = 0xFF; return;
+    case 10: settingsOpen = false; characterInvalidate(); return;
   }
   settingsSave();
 }
@@ -276,7 +287,7 @@ static void applyReset(uint8_t idx) {
   uint32_t now = millis();
   bool armed = (resetConfirmIdx == idx) && (int32_t)(now - resetConfirmUntil) < 0;
 
-  if (idx == 2) { resetOpen = false; return; }
+  if (idx == 3) { resetOpen = false; return; }
 
   if (!armed) {
     resetConfirmIdx = idx;
@@ -286,6 +297,13 @@ static void applyReset(uint8_t idx) {
   }
 
   beep(800, 200);
+  if (idx == 1) {
+    // forget wifi: creds gone, radio off — no reboot needed
+    wifiLinkForget();
+    resetOpen = false;
+    characterInvalidate();
+    return;
+  }
   if (idx == 0) {
     // delete char: wipe /characters/, reboot into ASCII mode
     File d = LittleFS.open("/characters");
@@ -362,13 +380,20 @@ static void drawSettings() {
     spr.setTextColor(p.textDim, PANEL);
     if (i == 0) {
       spr.printf("%u/4", brightLevel);
-    } else if (i >= 1 && i <= 5) {
+    } else if (i >= 1 && i <= 3) {
       spr.setTextColor(vals[i-1] ? GREEN : p.textDim, PANEL);
       spr.print(vals[i-1] ? " on" : "off");
-    } else if (i == 6) {
+    } else if (i == 4) {
+      WifiLinkState ws = wifiLinkState();
+      if (ws == WIFI_LINK_ONLINE) { spr.setTextColor(GREEN, PANEL); spr.print(" up"); }
+      else if (ws == WIFI_LINK_JOINING) spr.print("...");
+    } else if (i == 5 || i == 6) {
+      spr.setTextColor(vals[i-2] ? GREEN : p.textDim, PANEL);
+      spr.print(vals[i-2] ? " on" : "off");
+    } else if (i == 7) {
       static const char* const RN[] = { "auto", "port", "land" };
       spr.print(RN[s.clockRot]);
-    } else if (i == 7) {
+    } else if (i == 8) {
       uint8_t total = buddySpeciesCount() + (gifAvailable ? 1 : 0);
       uint8_t pos   = buddyMode ? buddySpeciesIdx() + 1 : total;
       spr.printf("%u/%u", pos, total);
@@ -521,6 +546,56 @@ void drawPasskey() {
   char b[8]; snprintf(b, sizeof(b), "%06lu", (unsigned long)blePasskey());
   spr.setCursor((W - 18 * 6) / 2, 110);
   spr.print(b);
+}
+
+// QR pairing screen: WIFI: QR phones auto-join, AP creds as text fallback,
+// live status line. Full-screen like drawPasskey.
+void drawWifiSetup() {
+  const Palette& p = characterPalette();
+  spr.fillScreen(p.bg);
+  spr.setTextSize(1);
+  spr.setTextColor(p.textDim, p.bg);
+  spr.setCursor(SAFE_L, 10); spr.print("WIFI SETUP");
+
+  char qrText[64];
+  wifiLinkQrText(qrText, sizeof(qrText));
+  QRCode qr;
+  uint8_t qrData[qrcode_getBufferSize(3)];   // v3 = 29 modules, fits WIFI: payload
+  if (qrcode_initText(&qr, qrData, 3, ECC_LOW, qrText) == 0) {
+    const int scale = 4, quiet = 6;
+    int qrPx = qr.size * scale;
+    int x0 = (W - qrPx) / 2, y0 = 24;
+    spr.fillRect(x0 - quiet, y0 - quiet, qrPx + 2*quiet, qrPx + 2*quiet, WHITE);
+    for (uint8_t y = 0; y < qr.size; y++)
+      for (uint8_t x = 0; x < qr.size; x++)
+        if (qrcode_getModule(&qr, x, y))
+          spr.fillRect(x0 + x*scale, y0 + y*scale, scale, scale, BLACK);
+  }
+
+  char l[40];
+  snprintf(l, sizeof(l), "%s / %s", wifiLinkApSsid(), wifiLinkApPass());
+  drawCenteredText(l, CX, 160, 1, p.textDim, p.bg);
+
+  const char* status = "scan with your phone";
+  uint16_t sc = p.text;
+  switch (wifiLinkState()) {
+    case WIFI_LINK_JOINING:
+      snprintf(l, sizeof(l), "joining %s...", wifiLinkSsid()); status = l; break;
+    case WIFI_LINK_ONLINE:
+      snprintf(l, sizeof(l), "online: %s", wifiLinkIp()); status = l; sc = GREEN; break;
+    case WIFI_LINK_FAILED:
+      snprintf(l, sizeof(l), "failed: %s", wifiLinkError()); status = l; sc = HOT; break;
+    default: break;
+  }
+  drawCenteredText(status, CX, 178, 1, sc, p.bg);
+  drawCenteredText("any key: close", CX, SAFE_B - 8, 1, p.textDim, p.bg);
+}
+
+static void closeWifiSetup() {
+  wifiSetupOpen = false;
+  wifiLinkStopPortal();
+  characterInvalidate();
+  if (buddyMode) buddyInvalidate();
 }
 
 void drawInfo() {
@@ -996,6 +1071,25 @@ void setup() {
 void loop() {
   hwInputUpdate();
   wifiLinkTick();
+  // A successful join turns the wifi setting on, so provisioning via the
+  // portal or cmd survives reboot without a separate toggle step.
+  static WifiLinkState _lastWifiState = WIFI_LINK_OFF;
+  {
+    WifiLinkState ws = wifiLinkState();
+    if (ws == WIFI_LINK_ONLINE && _lastWifiState != WIFI_LINK_ONLINE && !settings().wifi) {
+      settings().wifi = true;
+      settingsSave();
+    }
+    _lastWifiState = ws;
+  }
+  // Pairing screen auto-closes shortly after the join succeeds.
+  static uint32_t _wifiOnlineSince = 0;
+  if (wifiSetupOpen && wifiLinkState() == WIFI_LINK_ONLINE) {
+    if (!_wifiOnlineSince) _wifiOnlineSince = millis();
+    else if (millis() - _wifiOnlineSince > 5000) { _wifiOnlineSince = 0; closeWifiSetup(); }
+  } else {
+    _wifiOnlineSince = 0;
+  }
   ;
   t++;
   uint32_t now = millis();
@@ -1073,7 +1167,8 @@ void loop() {
   if (hwBtnA().pressedFor(600) && !btnALong && !swallowBtnA) {
     btnALong = true;
     beep(800, 60);
-    if (resetOpen) { resetOpen = false; }
+    if (wifiSetupOpen) { closeWifiSetup(); }
+    else if (resetOpen) { resetOpen = false; }
     else if (settingsOpen) { settingsOpen = false; characterInvalidate(); }
     else {
       menuOpen = !menuOpen;
@@ -1084,7 +1179,10 @@ void loop() {
   }
   if (hwBtnA().wasReleased) {
     if (!btnALong && !swallowBtnA) {
-      if (inPrompt) {
+      if (wifiSetupOpen) {
+        beep(1800, 30);
+        closeWifiSetup();
+      } else if (inPrompt) {
         char cmd[96];
         snprintf(cmd, sizeof(cmd), "{\"cmd\":\"permission\",\"id\":\"%s\",\"decision\":\"once\"}", tama.promptId);
         sendCmd(cmd);
@@ -1117,7 +1215,10 @@ void loop() {
   if (hwBtnB().wasPressed) {
     if (swallowBtnB) { swallowBtnB = false; }
     else
-    if (inPrompt) {
+    if (wifiSetupOpen) {
+      beep(1800, 30);
+      closeWifiSetup();
+    } else if (inPrompt) {
       char cmd[96];
       snprintf(cmd, sizeof(cmd), "{\"cmd\":\"permission\",\"id\":\"%s\",\"decision\":\"deny\"}", tama.promptId);
       sendCmd(cmd);
@@ -1150,12 +1251,14 @@ void loop() {
   // Clocking = idle home screen with RTC synced; drives gesture routing:
   // HUD (!clocking) gets tap-to-pet, clocking gets horizontal-swipe-to-switch-species.
   bool tpClocking = displayMode == DISP_NORMAL
-                 && !menuOpen && !settingsOpen && !resetOpen && !inPrompt
+                 && !menuOpen && !settingsOpen && !resetOpen && !inPrompt && !wifiSetupOpen
                  && tama.sessionsRunning == 0 && tama.sessionsWaiting == 0
                  && dataRtcValid();
 
   const HwTouch& tp = hwTouch();
   if (tp.justPressed) { _tpStartX = tp.x; _tpStartY = tp.y; _tpStartMs = millis(); }
+
+  if (wifiSetupOpen && tp.justPressed) { beep(1800, 30); closeWifiSetup(); }
 
   // Approval: tap upper half of the approval area = approve,
   //           tap lower half = deny.
@@ -1360,6 +1463,7 @@ void loop() {
   }
   if (!napping && !screenOff) {
     if (blePasskey()) drawPasskey();
+    else if (wifiSetupOpen) drawWifiSetup();
     else if (clocking) drawClock();
     else if (displayMode == DISP_INFO) drawInfo();
     else if (displayMode == DISP_PET) drawPet();
@@ -1434,6 +1538,7 @@ void loop() {
           || inPrompt || menuOpen || settingsOpen || resetOpen
           || (int32_t)(now - oneShotUntil) < 0
           || filePushActive()
+                || wifiSetupOpen
           || blePasskey()) {
     loopMs = 16;
   } else {

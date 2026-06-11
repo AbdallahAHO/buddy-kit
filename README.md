@@ -15,6 +15,7 @@ apps/buddy          the composition: persona state machine, screens, input
   lib/transport-ble NUS BLE bridge (NimBLE for C6, Bluedroid for S3, via -D flag)
   lib/transport-usb USB CDC as a ByteSource
   lib/file-push     desktop folder-push protocol, storage policy via FileSink
+  lib/wifi-link     Wi-Fi provisioning: QR-joinable SoftAP + captive portal + join lifecycle
   lib/faces         18 ASCII species + GIF character player (7-state persona contract)
   hal/hw            display/input/power/imu/rtc/audio, stateless, board-flag driven
   hal/boards        one capability header per board, selected via -DBOARD_*
@@ -47,6 +48,15 @@ python tools/test_xfer.py      # stream a character (GIF set) over USB
 Known quirk: on the C6's native USB, ~1% of chunk *acks* drop at 4 KB
 flash-erase boundaries (data is written correctly — only the reply notify is
 lost while the single core erases). BLE transfers are unaffected.
+
+## Wi-Fi pairing
+
+Settings → **wifi setup** shows a QR code; scan it with a phone camera to
+join the device's `Buddy-XXXX` AP, and the captive portal pops up to pick
+your network and enter its password. Reconnects on boot once provisioned;
+Settings → reset → **forget wifi** wipes it. Scriptable channel:
+`{"cmd":"wifi","ssid":"…","pass":"…"}` (also `"portal":true` /
+`"forget":true`) over USB or BLE.
 
 ## Roadmap
 
