@@ -1,9 +1,6 @@
 #pragma once
 #include <stdint.h>
-
-struct Palette {
-  uint16_t body, bg, text, textDim, ink;
-};
+#include "ui_canvas.h"   // Palette + color tokens
 
 // Call after M5.begin() and spr.createSprite(). Mounts LittleFS, reads
 // /characters/<name>/manifest.json, parses colors, caches GIF paths.

@@ -12,15 +12,6 @@
 #include "agent_link.h"
 #include "buddy.h"
 
-// TFT_eSPI used to define these named colors; Arduino_GFX uses
-// RGB565_*. Keep the names so existing UI code compiles unchanged.
-#define GREEN  0x07E0
-#define RED    0xF800
-#define BLUE   0x001F
-#define YELLOW 0xFFE0
-#define WHITE  0xFFFF
-#define BLACK  0x0000
-
 // spr is a thin alias for hwCanvas() — keeps existing UI code unchanged
 #define spr (*hwCanvas())
 
@@ -40,16 +31,12 @@ static void startBt() {
 #include "file_push.h"
 #include "app_commands.h"
 #include "wifi_link.h"
-#include "qrcode.h"
+#include "ui_canvas.h"
 const int W = HW_W;
 const int H = HW_H;
 const int CX = W / 2;
 const int CY_BASE = 120;
 // LED replaced by AMOLED border-flash via hwBorderAlert() — no GPIO LED.
-
-// Colors used across multiple UI surfaces
-const uint16_t HOT   = 0xFA20;   // red-orange: warnings, impatience, deny
-const uint16_t PANEL = 0x2104;   // overlay panel background
 
 // PersonaState comes from agent_state.h (via agent_link.h).
 const char* stateNames[] = { "sleep", "idle", "busy", "attention", "celebrate", "dizzy", "heart" };
@@ -343,23 +330,7 @@ static void applyReset(uint8_t idx) {
   ESP.restart();
 }
 
-// Footer hint row inside a menu panel: "<downLbl> ↓  <rightLbl> →" with
-// pixel triangles. Panels add MENU_HINT_H to height and call this at bottom.
-const int MENU_HINT_H = 14;
-static void drawMenuHints(const Palette& p, int mx, int mw, int hy,
-                          const char* downLbl = "A", const char* rightLbl = "B") {
-  spr.drawFastHLine(mx + 6, hy - 4, mw - 12, p.textDim);
-  spr.setTextColor(p.textDim, PANEL);
-  // 6px/glyph at size 1; triangle goes 4px after the label ends
-  int x = mx + 8;
-  spr.setCursor(x, hy); spr.print(downLbl);
-  x += strlen(downLbl) * 6 + 4;
-  spr.fillTriangle(x, hy + 1, x + 6, hy + 1, x + 3, hy + 6, p.textDim);
-  x = mx + mw / 2 + 4;
-  spr.setCursor(x, hy); spr.print(rightLbl);
-  x += strlen(rightLbl) * 6 + 4;
-  spr.fillTriangle(x, hy, x, hy + 6, x + 5, hy + 3, p.textDim);
-}
+const int MENU_HINT_H = 14;   // panels add this to height for uiMenuHints
 
 static void drawSettings() {
   const Palette& p = characterPalette();
@@ -399,7 +370,7 @@ static void drawSettings() {
       spr.printf("%u/%u", pos, total);
     }
   }
-  drawMenuHints(p, mx, mw, my + mh - 12, "Next", "Change");
+  uiMenuHints(spr, p, mx, mw, my + mh - 12, "Next", "Change");
 }
 
 static void drawReset() {
@@ -419,7 +390,7 @@ static void drawReset() {
     if (armed) spr.setTextColor(HOT, PANEL);
     spr.print(armed ? "really?" : resetItems[i]);
   }
-  drawMenuHints(p, mx, mw, my + mh - 12);
+  uiMenuHints(spr, p, mx, mw, my + mh - 12);
 }
 
 void menuConfirm() {
@@ -454,7 +425,7 @@ void drawMenu() {
     spr.print(menuItems[i]);
     if (i == 4) spr.print(dataDemo() ? "  on" : "  off");
   }
-  drawMenuHints(p, mx, mw, my + mh - 12);
+  uiMenuHints(spr, p, mx, mw, my + mh - 12);
 }
 
 // Portrait-only clock on AMOLED port (landscape removed — 368×448 is
@@ -477,16 +448,6 @@ static const char* const MON[] = {
 static const char* const DOW[] = {"Sun","Mon","Tue","Wed","Thu","Fri","Sat"};
 
 static uint8_t clockDow() { return _clkTm.dow % 7; }
-// Manual centered-text helper (Arduino_GFX has no setTextDatum). Default
-// font is 6 px wide × 8 px tall; multiply by textSize for placement.
-static void drawCenteredText(const char* s, int cx, int cy, int sz, uint16_t fg, uint16_t bg) {
-  int w = (int)strlen(s) * 6 * sz;
-  int h = 8 * sz;
-  spr.setTextSize(sz);
-  spr.setTextColor(fg, bg);
-  spr.setCursor(cx - w/2, cy - h/2);
-  spr.print(s);
-}
 static void drawClock() {
   const Palette& p = characterPalette();
   char hms[12]; snprintf(hms, sizeof(hms), "%02u:%02u:%02u", _clkTm.H, _clkTm.M, _clkTm.S);
@@ -498,8 +459,8 @@ static void drawClock() {
   // entirely above. Wider canvas + portrait orientation has plenty of
   // horizontal room for HH:MM:SS at size 3 (8 chars × 18 = 144 px).
   spr.fillRect(0, 140, W, H - 140, p.bg);
-  drawCenteredText(hms, CX, 160, 3, p.text,    p.bg);
-  drawCenteredText(dl,  CX, SAFE_B - 21, 1, p.textDim, p.bg);
+  uiCenteredText(spr, hms, CX, 160, 3, p.text,    p.bg);
+  uiCenteredText(spr, dl,  CX, SAFE_B - 21, 1, p.textDim, p.bg);
   spr.setTextSize(1);
 }
 
@@ -559,22 +520,11 @@ void drawWifiSetup() {
 
   char qrText[64];
   wifiLinkQrText(qrText, sizeof(qrText));
-  QRCode qr;
-  uint8_t qrData[qrcode_getBufferSize(3)];   // v3 = 29 modules, fits WIFI: payload
-  if (qrcode_initText(&qr, qrData, 3, ECC_LOW, qrText) == 0) {
-    const int scale = 4, quiet = 6;
-    int qrPx = qr.size * scale;
-    int x0 = (W - qrPx) / 2, y0 = 24;
-    spr.fillRect(x0 - quiet, y0 - quiet, qrPx + 2*quiet, qrPx + 2*quiet, WHITE);
-    for (uint8_t y = 0; y < qr.size; y++)
-      for (uint8_t x = 0; x < qr.size; x++)
-        if (qrcode_getModule(&qr, x, y))
-          spr.fillRect(x0 + x*scale, y0 + y*scale, scale, scale, BLACK);
-  }
+  uiQr(spr, qrText, CX, 24, 4);
 
   char l[40];
   snprintf(l, sizeof(l), "%s / %s", wifiLinkApSsid(), wifiLinkApPass());
-  drawCenteredText(l, CX, 160, 1, p.textDim, p.bg);
+  uiCenteredText(spr, l, CX, 160, 1, p.textDim, p.bg);
 
   const char* status = "scan with your phone";
   uint16_t sc = p.text;
@@ -587,8 +537,8 @@ void drawWifiSetup() {
       snprintf(l, sizeof(l), "failed: %s", wifiLinkError()); status = l; sc = HOT; break;
     default: break;
   }
-  drawCenteredText(status, CX, 178, 1, sc, p.bg);
-  drawCenteredText("any key: close", CX, SAFE_B - 8, 1, p.textDim, p.bg);
+  uiCenteredText(spr, status, CX, 178, 1, sc, p.bg);
+  uiCenteredText(spr, "any key: close", CX, SAFE_B - 8, 1, p.textDim, p.bg);
 }
 
 static void closeWifiSetup() {
@@ -757,44 +707,6 @@ void drawInfo() {
 // space. Returns number of rows written.
 // UTF-8 continuation byte = 0b10xxxxxx. Pull `take` back so we never
 // land mid-codepoint when hard-breaking long Chinese sentences.
-static uint8_t _utf8SafeTake(const char* w, uint8_t take, uint8_t wlen) {
-  if (take == 0 || take >= wlen) return take;
-  while (take > 0 && ((uint8_t)w[take] & 0xC0) == 0x80) take--;
-  return take;
-}
-
-static uint8_t wrapInto(const char* in, char out[][48], uint8_t maxRows, uint8_t width) {
-  uint8_t row = 0, col = 0;
-  const char* p = in;
-  while (*p && row < maxRows) {
-    while (*p == ' ') p++;                     // skip leading spaces
-    // measure next word
-    const char* w = p;
-    while (*p && *p != ' ') p++;
-    uint8_t wlen = p - w;
-    if (wlen == 0) break;
-    uint8_t need = (col > 0 ? 1 : 0) + wlen;
-    if (col + need > width) {
-      out[row][col] = 0;
-      if (++row >= maxRows) return row;
-      out[row][0] = ' '; col = 1;              // continuation indent
-    }
-    if (col > 1 || (col == 1 && out[row][0] != ' ')) out[row][col++] = ' ';
-    else if (col == 1 && row > 0) {}           // already have the indent space
-    // hard-break words that still don't fit, on UTF-8 char boundaries
-    while (wlen > width - col) {
-      uint8_t take = _utf8SafeTake(w, width - col, wlen);
-      if (take == 0) take = 1;                 // safety: avoid infinite loop
-      memcpy(&out[row][col], w, take); col += take; w += take; wlen -= take;
-      out[row][col] = 0;
-      if (++row >= maxRows) return row;
-      out[row][0] = ' '; col = 1;
-    }
-    memcpy(&out[row][col], w, wlen); col += wlen;
-  }
-  if (col > 0 && row < maxRows) { out[row][col] = 0; row++; }
-  return row;
-}
 
 static void drawApproval() {
   const Palette& p = characterPalette();
@@ -995,7 +907,7 @@ void drawHUD() {
   static uint8_t srcOf[32];
   uint8_t nDisp = 0;
   for (uint8_t i = 0; i < tama.nLines && nDisp < 32; i++) {
-    uint8_t got = wrapInto(tama.lines[i], &disp[nDisp], 32 - nDisp, WIDTH);
+    uint8_t got = uiWrap(tama.lines[i], &disp[nDisp], 32 - nDisp, WIDTH);
     for (uint8_t j = 0; j < got; j++) srcOf[nDisp + j] = i;
     nDisp += got;
   }
@@ -1054,11 +966,11 @@ void setup() {
     if (ownerName()[0]) {
       char line[40];
       snprintf(line, sizeof(line), "%s's", ownerName());
-      drawCenteredText(line,      W/2, H/2 - 12, 2, p.text, p.bg);
-      drawCenteredText(petName(), W/2, H/2 + 12, 2, p.body, p.bg);
+      uiCenteredText(spr, line,      W/2, H/2 - 12, 2, p.text, p.bg);
+      uiCenteredText(spr, petName(), W/2, H/2 + 12, 2, p.body, p.bg);
     } else {
-      drawCenteredText("Hello!",          W/2, H/2 - 12, 2, p.body,    p.bg);
-      drawCenteredText("a buddy appears", W/2, H/2 + 12, 1, p.textDim, p.bg);
+      uiCenteredText(spr, "Hello!",          W/2, H/2 - 12, 2, p.body,    p.bg);
+      uiCenteredText(spr, "a buddy appears", W/2, H/2 + 12, 1, p.textDim, p.bg);
     }
     spr.setTextSize(1);
     hwDisplayPush();
