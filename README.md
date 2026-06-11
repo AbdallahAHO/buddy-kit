@@ -6,6 +6,10 @@ A lego-layered monorepo for ESP32 companion devices, extracted from
 first composition; the layers are reusable for any desktop-to-gadget bridge
 (e-paper dashboards, HTTP/Worker-fed status displays, …).
 
+**Full documentation: [docs/](docs/README.md)** — architecture, rendering
+tree, data flow, input, protocol, connectivity, hardware, extending recipes.
+Contribution rules (incl. the docs-stay-true contract): [CLAUDE.md](CLAUDE.md).
+
 ## Layers
 
 ```
