@@ -16,6 +16,7 @@ apps/buddy          the composition: persona state machine, screens, input
   lib/transport-usb USB CDC as a ByteSource
   lib/file-push     desktop folder-push protocol, storage policy via FileSink
   lib/wifi-link     Wi-Fi provisioning: QR-joinable SoftAP + captive portal + join lifecycle
+  lib/transport-http  hub polling as a ByteSource (GET /poll, POST /push) over wifi-link
   lib/faces         18 ASCII species + GIF character player (7-state persona contract)
   hal/hw            display/input/power/imu/rtc/audio, stateless, board-flag driven
   hal/boards        one capability header per board, selected via -DBOARD_*
@@ -58,8 +59,18 @@ Settings → reset → **forget wifi** wipes it. Scriptable channel:
 `{"cmd":"wifi","ssid":"…","pass":"…"}` (also `"portal":true` /
 `"forget":true`) over USB or BLE.
 
+## Hub over HTTP
+
+`{"cmd":"hub","url":"http://host:8787"}` points the device at a hub API it
+polls once a second (`GET /poll` for pending JSON lines, `POST /push` for
+its replies) whenever Wi-Fi is up. Persisted; survives reboot. Local dev
+hub: `python tools/test_hub.py`, then
+`curl -d '{"cmd":"status"}' http://localhost:8787/queue` and watch the
+device answer over the air.
+
 ## Roadmap
 
 - M2: native-env tests for line-bus framing/dispatch and agent-state
-- M3: Cloudflare Worker hub (Durable Object, POST /state + SSE) + transport-http
+- M3: Cloudflare Worker hub (Durable Object) speaking the same /poll +
+  /push contract — transport-http needs only an https base URL
 - M4: e-paper dashboard app (XIAO 7.5") — second composition over the same legos

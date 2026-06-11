@@ -8,6 +8,8 @@
 #include "transport_usb.h"
 #include "transport_ble.h"
 #include "wifi_link.h"
+#include "transport_http.h"
+#include <Preferences.h>
 
 // Defined later in main.cpp's TU.
 extern bool buddyMode, gifAvailable;
@@ -170,14 +172,15 @@ static bool cmdStatus(JsonDocument&, void*) {
   int iBat = hb.mA;
   int vBus = hb.usbPresent ? 5000 : 0;
   int pct  = hb.pct;
-  char b[400];
+  char b[512];
   int len = snprintf(b, sizeof(b),
     "{\"ack\":\"status\",\"ok\":true,\"n\":0,\"data\":{"
     "\"name\":\"%s\",\"owner\":\"%s\",\"sec\":%s,"
     "\"bat\":{\"pct\":%d,\"mV\":%d,\"mA\":%d,\"usb\":%s},"
     "\"sys\":{\"up\":%lu,\"heap\":%u,\"fsFree\":%lu,\"fsTotal\":%lu},"
     "\"stats\":{\"appr\":%u,\"deny\":%u,\"vel\":%u,\"nap\":%lu,\"lvl\":%u},"
-    "\"wifi\":{\"state\":\"%s\",\"ssid\":\"%s\",\"ip\":\"%s\"}"
+    "\"wifi\":{\"state\":\"%s\",\"ssid\":\"%s\",\"ip\":\"%s\"},"
+    "\"hub\":{\"url\":\"%s\",\"ok\":%s}"
     "}}\n",
     petName(), ownerName(), bleSecure() ? "true" : "false",
     pct, vBat, iBat, (vBus > 4000) ? "true" : "false",
@@ -187,7 +190,8 @@ static bool cmdStatus(JsonDocument&, void*) {
     stats().approvals, stats().denials, statsMedianVelocity(),
     (unsigned long)stats().napSeconds, stats().level,
     (const char*[]){"off","portal","joining","online","failed"}[wifiLinkState()],
-    wifiLinkSsid(), wifiLinkIp()
+    wifiLinkSsid(), wifiLinkIp(),
+    httpTransportUrl(), httpTransportHealthy() ? "true" : "false"
   );
   gLineOut.write((const uint8_t*)b, len);
   return true;
@@ -216,6 +220,30 @@ static bool cmdWifi(JsonDocument& doc, void*) {
   return true;
 }
 
+// {"cmd":"hub","url":"http://host:port"} → poll that hub over Wi-Fi (persisted)
+// {"cmd":"hub","off":true}               → stop + forget the hub
+static void _hubSave(const char* url) {
+  Preferences p;
+  p.begin("buddy", false);
+  if (url && url[0]) p.putString("huburl", url); else p.remove("huburl");
+  p.end();
+}
+
+static bool cmdHub(JsonDocument& doc, void*) {
+  if (doc["off"] | false) {
+    httpTransportStop();
+    _hubSave(nullptr);
+    lineBusAck(gLineOut, "hub", true);
+    return true;
+  }
+  const char* url = doc["url"];
+  if (!url || strncmp(url, "http", 4) != 0) { lineBusAck(gLineOut, "hub", false); return true; }
+  _hubSave(url);
+  httpTransportStart(url);
+  lineBusAck(gLineOut, "hub", true);
+  return true;
+}
+
 static const CmdEntry APP_CMDS[] = {
   { "name",    cmdName    },
   { "species", cmdSpecies },
@@ -223,6 +251,7 @@ static const CmdEntry APP_CMDS[] = {
   { "owner",   cmdOwner   },
   { "status",  cmdStatus  },
   { "wifi",    cmdWifi    },
+  { "hub",     cmdHub     },
 };
 
 // Called from data.h for any incoming JSON with a "cmd" key. Returns true
@@ -242,5 +271,11 @@ bool appCommand(JsonDocument& doc) {
 inline void appCommandsInit() {
   gLineOut.add(&usbSerialSource());
   gLineOut.add(&bleByteSource());
+  gLineOut.add(&httpByteSource());
   filePushInit(&APP_FILE_SINK, &gLineOut);
+  Preferences p;
+  p.begin("buddy", true);
+  String hub = p.getString("huburl", "");
+  p.end();
+  if (hub.length()) httpTransportStart(hub.c_str());
 }

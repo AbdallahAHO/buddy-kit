@@ -9,6 +9,7 @@
 #include "line_bus.h"
 #include "transport_usb.h"
 #include "transport_ble.h"
+#include "transport_http.h"
 #include "agent_state.h"
 #include "hw/rtc.h"
 #include "stats.h"
@@ -116,7 +117,7 @@ static size_t _pump(ByteSource& src, LineFramer<N>& f, TamaState* out) {
   return consumed;
 }
 
-static LineFramer<1024> _usbLine, _btLine;
+static LineFramer<1024> _usbLine, _btLine, _httpLine;
 
 inline void dataPoll(TamaState* out) {
   uint32_t now = millis();
@@ -133,6 +134,7 @@ inline void dataPoll(TamaState* out) {
 
   _pump(usbSerialSource(), _usbLine, out);
   if (_pump(bleByteSource(), _btLine, out) > 0) _lastBtByteMs = millis();
+  _pump(httpByteSource(), _httpLine, out);
 
   out->connected = dataConnected();
   if (!out->connected) {
