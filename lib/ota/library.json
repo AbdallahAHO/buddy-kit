@@ -1,0 +1,8 @@
+{
+  "name": "buddy-ota",
+  "version": "0.1.0",
+  "description": "HTTP-pull OTA firmware update (HTTPUpdate): fetch a .bin, flash the inactive OTA slot, reboot with rollback. Requires a dual-OTA partition table. Progress via callback.",
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

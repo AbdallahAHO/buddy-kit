@@ -17,6 +17,8 @@
 #include "hw/hw.h"
 #include "hid_mouse.h"
 #include "jiggler.h"
+#include "ota.h"
+#include <esp_ota_ops.h>
 
 LineOut gLineOut;
 
@@ -176,7 +178,7 @@ static bool cmdStatus(JsonDocument&, void*) {
   int iBat = hb.mA;
   int vBus = hb.usbPresent ? 5000 : 0;
   int pct  = hb.pct;
-  char b[512];
+  char b[560];
   int len = snprintf(b, sizeof(b),
     "{\"ack\":\"status\",\"ok\":true,\"n\":0,\"data\":{"
     "\"name\":\"%s\",\"owner\":\"%s\",\"sec\":%s,"
@@ -185,7 +187,8 @@ static bool cmdStatus(JsonDocument&, void*) {
     "\"stats\":{\"appr\":%u,\"deny\":%u,\"vel\":%u,\"nap\":%lu,\"lvl\":%u},"
     "\"wifi\":{\"state\":\"%s\",\"ssid\":\"%s\",\"ip\":\"%s\"},"
     "\"hub\":{\"url\":\"%s\",\"ok\":%s},"
-    "\"jiggler\":{\"on\":%s,\"hid\":%s}"
+    "\"jiggler\":{\"on\":%s,\"hid\":%s},"
+    "\"ota\":{\"slot\":\"%s\"}"
     "}}\n",
     petName(), ownerName(), bleSecure() ? "true" : "false",
     pct, vBat, iBat, (vBus > 4000) ? "true" : "false",
@@ -197,7 +200,8 @@ static bool cmdStatus(JsonDocument&, void*) {
     (const char*[]){"off","portal","joining","online","failed"}[wifiLinkState()],
     wifiLinkSsid(), wifiLinkIp(),
     httpTransportUrl(), httpTransportHealthy() ? "true" : "false",
-    settings().jiggler ? "true" : "false", hidMouseConnected() ? "true" : "false"
+    settings().jiggler ? "true" : "false", hidMouseConnected() ? "true" : "false",
+    esp_ota_get_running_partition() ? esp_ota_get_running_partition()->label : "?"
   );
   gLineOut.write((const uint8_t*)b, len);
   return true;
@@ -259,6 +263,17 @@ static bool cmdJiggler(JsonDocument& doc, void*) {
   return true;
 }
 
+// {"cmd":"ota","url":"http://host/firmware.bin"} → pull + flash + reboot.
+// Acks first (the pull blocks and then reboots, so this is the last line
+// the host hears on the old firmware).
+static bool cmdOta(JsonDocument& doc, void*) {
+  const char* url = doc["url"];
+  if (!url || strncmp(url, "http", 4) != 0) { lineBusAck(gLineOut, "ota", false); return true; }
+  lineBusAck(gLineOut, "ota", true);
+  otaPull(url);   // returns only on failure; the OTA screen shows the error
+  return true;
+}
+
 static const CmdEntry APP_CMDS[] = {
   { "name",    cmdName    },
   { "species", cmdSpecies },
@@ -268,6 +283,7 @@ static const CmdEntry APP_CMDS[] = {
   { "wifi",    cmdWifi    },
   { "hub",     cmdHub     },
   { "jiggler", cmdJiggler },
+  { "ota",     cmdOta     },
 };
 
 bool appCommand(JsonDocument& doc) {

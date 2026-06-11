@@ -40,6 +40,8 @@ static void startBt() {
 #include "input_router.h"
 #include "hid_mouse.h"
 #include "jiggler.h"
+#include "ota.h"
+#include "screens/ota_screen.h"
 #include "wifi_link.h"
 #include "ui_canvas.h"
 // LED replaced by AMOLED border-flash via hwBorderAlert() — no GPIO LED.
@@ -171,6 +173,7 @@ void setup() {
   hwInit();                  // Wire + expander + display + power + input + IMU + RTC + audio
   startBt();                 // BLE stays always-on
   hidMouseInit();            // HID mouse service on the same GATT server
+  otaInit(otaScreenOnProgress);
   appCommandsInit();         // ack fan-out (USB+BLE) + file-push sink
   wifiLinkInit();
   applyBrightness();
@@ -397,7 +400,8 @@ void loop() {
     }
   }
   if (!napping && !screenOff) {
-    if (blePasskey()) passkeyDraw(spr);
+    if (otaScreenActive()) otaScreenDraw(spr);
+    else if (blePasskey()) passkeyDraw(spr);
     else if (wifiSetupOpen) wifiSetupDraw(spr);
     else if (clocking) homeClockDraw(spr);
     else if (displayMode == DISP_INFO) infoDraw(spr);
