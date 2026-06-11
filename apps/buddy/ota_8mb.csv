@@ -1,0 +1,13 @@
+# Dual-OTA layout for 8MB flash. Two ~3MB app slots let the running firmware
+# write a new image to the inactive slot and switch (with rollback). nvs and
+# spiffs keep their offsets from no_ota_8mb.csv so a one-time USB reflash onto
+# this table PRESERVES wifi creds/settings (nvs) and characters (spiffs).
+#
+# nvs ends at 0xe000: PlatformIO writes boot_app0.bin (otadata init) there on
+# every USB upload — see docs/hardware.md.
+# Name,    Type, SubType,  Offset,   Size
+nvs,       data, nvs,      0x9000,   0x5000
+otadata,   data, ota,      0xe000,   0x2000
+ota_0,     app,  ota_0,    0x10000,  0x300000
+ota_1,     app,  ota_1,    0x310000, 0x300000
+spiffs,    data, spiffs,   0x610000, 0x1F0000
