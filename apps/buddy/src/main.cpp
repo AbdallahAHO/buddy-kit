@@ -30,6 +30,7 @@ static void startBt() {
 #include "stats.h"
 #include "file_push.h"
 #include "app_commands.h"
+#include "app_state.h"
 #include "wifi_link.h"
 #include "ui_canvas.h"
 const int W = HW_W;
@@ -164,11 +165,11 @@ static bool tappedFrom(int x, int y, int w, int h) {
 static const uint32_t PLAYFUL_MS = 3UL * 60UL * 1000UL;
 static uint32_t _playfulUntil = 0;
 
+// Replies (permission decisions) fan out to every transport — USB, BLE,
+// and the HTTP hub — via the shared LineOut.
 static void sendCmd(const char* json) {
-  Serial.println(json);
-  size_t n = strlen(json);
-  bleWrite((const uint8_t*)json, n);
-  bleWrite((const uint8_t*)"\n", 1);
+  gLineOut.write((const uint8_t*)json, strlen(json));
+  gLineOut.write((const uint8_t*)"\n", 1);
 }
 const uint8_t INFO_PAGES = 6;
 const uint8_t INFO_PG_BUTTONS = 1;
@@ -320,9 +321,7 @@ static void applyReset(uint8_t idx) {
     // factory reset: NVS namespace wipe + filesystem format + BLE bonds.
     // Clears stats, owner, petname, species, settings, GIF characters,
     // and any stored LTKs so the next desktop has to re-pair.
-    _prefs.begin("buddy", false);
-    _prefs.clear();
-    _prefs.end();
+    statsFactoryWipe();
     LittleFS.format();
     bleClearBonds();
   }
