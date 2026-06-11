@@ -9,7 +9,12 @@ first composition; the layers are reusable for any desktop-to-gadget bridge
 ## Layers
 
 ```
-apps/buddy          the composition: persona state machine, screens, input
+apps/buddy          the composition root (~470-line main.cpp)
+  apps/buddy/src/app_state.h     the store: shared state, one header
+  apps/buddy/src/screens/        organisms: home/info/pet/passkey/wifi — explicit canvas,
+                                 screen-local state behind tiny APIs
+  apps/buddy/src/overlays.cpp    menu/settings/reset as data tables → one ListPanel
+  apps/buddy/src/input_router.cpp  raw input → focus ladder (approval > wifi > overlay > screen)
   lib/agent-state   AgentState schema + snapshot apply + persona selector (pure C++)
   lib/line-bus      ByteSource pipe contract, newline framer, ack fan-out, cmd dispatch
   lib/transport-ble NUS BLE bridge (NimBLE for C6, Bluedroid for S3, via -D flag)
