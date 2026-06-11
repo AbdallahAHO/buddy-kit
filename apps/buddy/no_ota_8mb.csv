@@ -1,5 +1,9 @@
 # Name,    Type, SubType,  Offset,   Size
-nvs,       data, nvs,      0x9000,   0x6000
-phy_init,  data, phy,      0xf000,   0x1000
-factory,   app,  factory,  0x10000,  0x600000
+# NVS must end at 0xe000: PlatformIO writes boot_app0.bin there on every
+# upload, and upstream's layout (nvs 0x9000+0x6000) let it corrupt the last
+# NVS page — wiping fresh keys (wifi creds!) on each reflash. otadata now
+# owns 0xe000 legally; app is ota_0 so boot_app0's slot selection resolves.
+nvs,       data, nvs,      0x9000,   0x5000
+otadata,   data, ota,      0xe000,   0x2000
+app0,      app,  ota_0,    0x10000,  0x600000
 spiffs,    data, spiffs,   0x610000, 0x1F0000
