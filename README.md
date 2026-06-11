@@ -26,6 +26,7 @@ apps/buddy          the composition root (~470-line main.cpp)
   lib/file-push     desktop folder-push protocol, storage policy via FileSink
   lib/wifi-link     Wi-Fi provisioning: QR-joinable SoftAP + captive portal + join lifecycle
   lib/hid-mouse     BLE HID mouse on the shared GATT server (jiggler mode)
+  lib/ota           wireless firmware update (HTTP pull, dual-OTA slots)
   lib/transport-http  hub polling as a ByteSource (GET /poll, POST /push) over wifi-link
   lib/faces         18 ASCII species + GIF character player (7-state persona contract)
   hal/hw            display/input/power/imu/rtc/audio, stateless, board-flag driven

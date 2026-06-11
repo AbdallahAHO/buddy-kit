@@ -29,14 +29,19 @@ esptool can't connect, hold BOOT → tap PWR → release BOOT for download mode.
 Full-chip recovery (factory snapshot) lives in the esp workspace:
 `../../boards/wsc6-amoled-2.16/board.py restore`.
 
-## Partition table (`apps/buddy/no_ota_8mb.csv`) — DO NOT reshape casually
+## Partition table (`apps/buddy/ota_8mb.csv`) — DO NOT reshape casually
 
 ```
 nvs      0x9000  0x5000     ← must END at 0xe000
 otadata  0xe000  0x2000     ← PlatformIO writes boot_app0.bin here on EVERY upload
-app0     0x10000 0x600000   (ota_0 so boot_app0's slot selection resolves)
+ota_0    0x10000 0x300000   dual-OTA slots (see docs/ota.md)
+ota_1    0x310000 0x300000
 spiffs   0x610000 0x1F0000  (LittleFS: /characters/)
 ```
+
+The single-slot `no_ota_8mb.csv` predates OTA; `ota_8mb.csv` (dual-slot) is
+current. `nvs`/`spiffs` offsets are identical between them, so switching
+tables over USB preserves creds, settings and characters.
 
 History: upstream's table had NVS spanning 0x9000–0xf000. PlatformIO
 unconditionally flashes `boot_app0.bin` at 0xe000, silently corrupting the
@@ -45,7 +50,7 @@ vanished after reflashes. The current shape is the standard Arduino no-OTA
 layout and is load-bearing. Upstream still has the bug (PR-worthy).
 
 NVS namespace `"buddy"` holds everything: stats, settings (`s_*`), petname/
-owner, species, `wssid`/`wpass`, `huburl`. App-only uploads preserve it;
+owner, species, `wssid`/`wpass`, `huburl`, `s_jig`. App-only uploads preserve it;
 `factory reset` (or `pio run -t erase`) wipes it.
 
 ## C6 native-USB (HWCDC) quirks — field-verified

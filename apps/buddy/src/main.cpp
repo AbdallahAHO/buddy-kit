@@ -42,6 +42,7 @@ static void startBt() {
 #include "jiggler.h"
 #include "ota.h"
 #include "screens/ota_screen.h"
+#include "dev_ota.h"
 #include "wifi_link.h"
 #include "ui_canvas.h"
 // LED replaced by AMOLED border-flash via hwBorderAlert() — no GPIO LED.
@@ -215,6 +216,7 @@ void setup() {
 void loop() {
   hwInputUpdate();
   wifiLinkTick();
+  devOtaTick();
   jigglerTick(millis());
   // Wi-Fi resilience: a failed boot join (router rebooting, out of range)
   // previously parked the radio OFF forever. Retry every 5 min while the

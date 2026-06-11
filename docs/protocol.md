@@ -32,7 +32,7 @@ failure). Buddy-kit additions are marked ★.
 
 | Command | Effect |
 |---|---|
-| `{"cmd":"status"}` | full status blob: name/owner/sec, bat, sys, stats, ★wifi `{state,ssid,ip}`, ★hub `{url,ok}`, ★jiggler `{on,hid}` |
+| `{"cmd":"status"}` | full status blob: name/owner/sec, bat, sys, stats, ★wifi `{state,ssid,ip}`, ★hub `{url,ok}`, ★jiggler `{on,hid}`, ★ota `{slot}` |
 | `{"cmd":"name","name":…}` | set pet name (sanitized, NVS) |
 | `{"cmd":"owner","name":…}` | set owner name |
 | `{"cmd":"species","idx":n}` | select ASCII species; `255` = GIF mode |
@@ -44,6 +44,7 @@ failure). Buddy-kit additions are marked ★.
 | ★`{"cmd":"hub","url":"http://…"}` | poll that hub (persisted, survives reboot) |
 | ★`{"cmd":"hub","off":true}` | stop + forget the hub |
 | ★`{"cmd":"jiggler","on":bool}` | BLE mouse jiggler mode (persisted); status reports `jiggler {on,hid}` |
+| ★`{"cmd":"ota","url":"http://…/x.bin"}` | pull + flash + reboot (see docs/ota.md); status reports `ota {slot}` |
 
 ## Folder push (character install)
 

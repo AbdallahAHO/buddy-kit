@@ -40,6 +40,7 @@ commit:**
 | input ladder, overlays tables, gestures | `docs/input.md` |
 | any cmd/ack, snapshot fields, file push, hub routes | `docs/protocol.md` |
 | wifi-link, portal/QR pairing, transport-http | `docs/connectivity.md` |
+| OTA (lib/ota, dev_ota, partition table) | `docs/ota.md` |
 | boards, partition table, NVS keys, USB/display quirks, memory | `docs/hardware.md` |
 | anything that changes a recipe | `docs/extending.md` |
 | repo layout / quickstart | `README.md` |
@@ -63,9 +64,10 @@ physical checklist in `docs/extending.md`.
 
 ## Hard-won gotchas (details in docs/hardware.md)
 
-- **Partition table is load-bearing**: NVS must end at 0xe000 because
-  PlatformIO writes boot_app0.bin there every upload (upstream's layout lost
-  NVS keys on each reflash). Don't reshape it casually.
+- **Partition table is load-bearing**: dual-OTA (`ota_8mb.csv`); NVS must end
+  at 0xe000 (PlatformIO writes boot_app0.bin there every upload). Changing
+  the app slot layout breaks OTA; nvs/spiffs offsets must stay put so flashes
+  preserve creds + characters. See docs/ota.md + docs/hardware.md.
 - LDF stays on default `chain`; `chain+`/`deep+` break LittleFS resolution
   on pioarduino. The C6 env `lib_ignore`s `BLE` (Bluedroid) deliberately.
 - `#define U8G2_FONT_SECTION(name)` must precede Arduino_GFX includes in
