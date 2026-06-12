@@ -1,6 +1,6 @@
-# 001: Libraries receive app policy through injected link-time contracts
+# 001: Libraries receive app policy through injected contracts, never app includes
 
-**Decision:** When a `lib/*` lego needs app policy (where files land, how creds persist, where entropy comes from), the app supplies it by defining plain functions the lib declares — link-time injection, not function pointers and never an app include.
+**Decision:** When a `lib/*` lego needs app policy (where files land, how creds persist, where entropy comes from), the app injects it — as link-time symbols (`facesSpeciesLoad/Save`, `wifiCredsLoad/Save/Clear`, `agentStateRandom`) or as a const struct of plain function pointers handed over once at init (`FileSink`) — never via an app include, never via `std::function`.
 **Status:** approved
 **Date:** 2026-06-10
 
@@ -13,24 +13,26 @@ includes an app header — `lib/faces` knowing about NVS namespaces, or
 composition. But the policy has to come from somewhere: files must land
 somewhere real, species choices must persist.
 
-Two conventional escapes both cost something. Runtime function pointers
-(register-a-callback) add indirection, a null-check failure mode, and
-setup-order coupling. `std::function` is off the table outright (ADR 002).
+`std::function` is off the table outright (ADR 002), and an app include
+inverts the dependency arrow. What remains are two heap-free shapes.
 
 ## Decision
 
-Libs declare the functions they need (`FileSink`'s operations,
-`facesSpeciesLoad/Save`, `wifiCredsLoad/Save/Clear`, `agentStateRandom`)
-and call them directly. Each app defines them in its `*_store.cpp` glue.
-The dependency rule stays absolute: `lib/*` never includes app headers;
+Single-function policies are **link-time**: the lib declares the function
+and calls it directly; the app defines it (`faces_store.cpp`,
+`wifi_store.cpp`, `agent_link.cpp`) — six symbols today. A missing impl
+is a loud link error; zero indirection. Multi-operation policies where
+the calls cluster are a **const struct of function pointers** registered
+once at init: `FileSink` (begin/chunk/end/wipe + fit check), defined in
+`app_commands.cpp` and passed to `filePushInit()`. Either way, the
+dependency rule stays absolute: `lib/*` never includes app headers;
 everything points down.
 
 ## Consequences
 
-A missing impl is a loud link error at build time, not a null-pointer
-panic on the device. Zero runtime overhead — direct calls, no vtables or
-pointer tables. New apps start as "implement these five symbols and
-compose." The cost: an app can't swap a policy at runtime, and the
+New apps start as "define these symbols, fill these structs, compose."
+No vtables, no heap, no setup-order coupling for the link-time shape; the
+struct shape carries one init call and a null guard in `file-push`. The
 contract surface is only discoverable by reading the lib headers —
 `docs/architecture.md` carries the contract table for that reason.
 

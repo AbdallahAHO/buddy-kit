@@ -84,7 +84,7 @@ When the hub is a fleet server (see cloud.md), the device also sends
 "token":…}`. The plain local hub ignores them.
 
 That's the whole contract — an M3 Cloudflare Worker only needs these two
-routes. Local dev hub: `python tools/test_hub.py` (+ `POST /queue` to
+routes. Local dev hub: `python3 tools/test_hub.py` (+ `POST /queue` to
 enqueue lines for the device).
 
 ## Dev tools (apps/buddy/tools/)

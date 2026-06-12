@@ -21,7 +21,7 @@ extending.md). App code never mentions a board.
 cd apps/buddy
 pio run -e waveshare-esp32c6-touch-amoled-2-16 -t upload   # port + 460800 pinned in ini
 pio device monitor                                          # 115200
-python tools/test_serial.py                                 # drive personas over USB
+python3 tools/test_serial.py                                 # drive personas over USB
 ```
 
 C6 house rules (from the parent esp workspace): upload at **460800**; if

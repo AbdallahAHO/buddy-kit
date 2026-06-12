@@ -23,12 +23,12 @@ The `adr` skill (`.agents/skills/adr/`) walks through writing one.
 
 ## Index
 
-- [001](001-injected-link-time-contracts.md) — Libraries receive app policy through injected link-time contracts
+- [001](001-injected-link-time-contracts.md) — Libraries receive app policy through injected contracts, never app includes
 - [002](002-c6-heap-is-the-floor.md) — The C6's 512 KB heap is the floor: heapless contracts, no std::function
 - [003](003-one-way-flow-and-the-ghost-rule.md) — State flows one way; out-of-territory painters full-clear on close
 - [004](004-ldf-stays-on-chain-mode.md) — LDF stays on default chain mode
 - [005](005-nvs-ends-at-0xe000.md) — NVS ends at 0xe000 so PlatformIO's boot_app0 write lands in otadata
 - [006](006-dual-ota-partition-table.md) — Dual-OTA partition table keeps nvs/spiffs offsets fixed
-- [007](007-devices-poll-the-hub.md) — Devices poll the hub instead of holding Durable Object connections
+- [007](007-devices-poll-the-hub.md) — Devices poll the hub (/poll + /push) instead of holding Durable Object connections
 - [008](008-nimble-on-c6-bluedroid-on-s3.md) — NimBLE on the C6, Bluedroid on the S3 boards
 - [009](009-agents-md-adrs-skills.md) — Agent rules live in vendor-neutral AGENTS.md; decisions live in ADRs; skills under .agents/skills/

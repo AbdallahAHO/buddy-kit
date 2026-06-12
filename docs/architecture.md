@@ -43,9 +43,11 @@ include app headers. When a lib needs app policy, the app injects it:
 | wifi-link | `wifiCredsLoad/Save/Clear` | `wifi_store.cpp` |
 | agent-state | `agentStateRandom()` (entropy for matrixify) | `agent_link.cpp` |
 
-Injection is **link-time** (plain functions the app must define), not
-function pointers — a missing impl is a loud link error, and there's zero
-runtime overhead. Rationale:
+Injection is **link-time** for single-function policies (plain functions
+the app must define — a missing impl is a loud link error, zero
+indirection) and a **const struct of function pointers** registered once
+at init for clustered ones (`FileSink` → `filePushInit()`). Never
+`std::function`, never an app include. Rationale:
 [ADR 001](decisions/001-injected-link-time-contracts.md).
 
 ## The React / atomic-design mapping

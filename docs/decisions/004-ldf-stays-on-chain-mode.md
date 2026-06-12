@@ -16,8 +16,9 @@ cost real time.
 
 ## Decision
 
-Every env stays on the default `chain` mode — the setting is simply never
-overridden in `platformio.ini`. The known chain-mode false positive is
+Every env stays on `chain` mode — pinned explicitly
+(`lib_ldf_mode = chain` in `platformio.ini`, with a warning comment) so
+nobody "upgrades" it casually. The known chain-mode false positive is
 handled at the env level instead: chain mode can't see that the Bluedroid
 impl in `transport-ble` is `#ifdef`'d out on the C6, so it drags in the
 core `BLE` library; the C6 env carries `lib_ignore = BLE` to cut it.

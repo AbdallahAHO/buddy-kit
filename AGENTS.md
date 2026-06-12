@@ -8,9 +8,10 @@ companion pet) is the first composition. Full breakdown lives in
 ## The rules (violations are bugs, not style)
 
 1. **Dependencies point down.** `lib/*` never includes app headers. App
-   policy enters libs via injected contracts (`FileSink`,
-   `facesSpeciesLoad/Save`, `wifiCreds*`, `agentStateRandom`) — link-time
-   functions, not function pointers.
+   policy enters libs via injected contracts — link-time functions
+   (`facesSpeciesLoad/Save`, `wifiCreds*`, `agentStateRandom`) or a const
+   function-pointer struct handed over once at init (`FileSink`); never
+   `std::function`, never an app include.
 2. **One-way flow.** Render functions never write shared state; input code
    never paints. Shared state goes through `app_state.h`; screen-local
    state stays inside its `screens/*.cpp`.
@@ -59,8 +60,8 @@ hour), it goes in the matching doc immediately.
 cd apps/buddy
 pio run -e waveshare-esp32c6-touch-amoled-2-16 -t upload   # port+baud pinned in ini
 pio device monitor                 # 115200
-python tools/test_serial.py        # personas via USB
-python tools/test_hub.py           # local hub for transport-http
+python3 tools/test_serial.py        # personas via USB
+python3 tools/test_hub.py           # local hub for transport-http
 ```
 
 Every refactor stage gets flashed and exercised on the C6 before commit —
@@ -89,9 +90,9 @@ matching a description below, read that SKILL.md directly.
   the app slot layout breaks OTA; nvs/spiffs offsets must stay put so flashes
   preserve creds + characters. See docs/ota.md + docs/hardware.md.
   (ADR 005, ADR 006)
-- LDF stays on default `chain`; `chain+`/`deep+` break LittleFS resolution
-  on pioarduino. The C6 env `lib_ignore`s `BLE` (Bluedroid) deliberately.
-  (ADR 004, ADR 008)
+- LDF stays on `chain` (pinned in ini); `chain+`/`deep+` break LittleFS
+  resolution on pioarduino. The C6 env `lib_ignore`s `BLE` (Bluedroid)
+  deliberately. (ADR 004, ADR 008)
 - `#define U8G2_FONT_SECTION(name)` must precede Arduino_GFX includes in
   any TU using U8g2 fonts.
 - USB file push on the C6 drops ~1 % of chunk *acks* at flash-erase

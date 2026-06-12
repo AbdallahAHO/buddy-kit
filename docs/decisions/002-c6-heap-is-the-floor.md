@@ -22,9 +22,12 @@ run its own firmware.
 The C6 sets the bar for everything in `lib/` and `hal/`. Contracts are
 C-style: structs of plain function pointers (`ByteSource`, `FileSink`) or
 link-time symbols (ADR 001). Buffers are fixed-size and sized explicitly
-(e.g. the 2048-byte USB RX ring). Hot paths — the loop, render, transport
-pumps — never allocate. `lib/agent-state` and `lib/line-bus` additionally
-stay Arduino-free so they compile under PlatformIO's `native` platform.
+(e.g. the 2048-byte USB RX ring). Hot paths — the loop, render, and the
+per-byte transport pumps — never allocate; the 1 Hz HTTP poll task sits
+deliberately outside that rule (transient HTTPClient/String per pass, off
+the loop thread). `lib/agent-state` and `lib/line-bus` additionally stay
+Arduino-free so the planned native-test envs (M2) can compile them
+off-target.
 
 ## Consequences
 
