@@ -91,6 +91,7 @@ device answer over the air.
 ## Roadmap
 
 - M2: native-env tests for line-bus framing/dispatch and agent-state
-- M3: Cloudflare Worker hub (Durable Object) speaking the same /poll +
-  /push contract — transport-http needs only an https base URL
+- M3: cloud fleet hub — **done** (`cloud/`, [docs/cloud.md](docs/cloud.md));
+  verified e2e over `wrangler dev`. Production deploy needs the device-side
+  HTTPS change (WiFiClientSecure in transport-http + lib/ota)
 - M4: e-paper dashboard app (XIAO 7.5") — second composition over the same legos
