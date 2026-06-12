@@ -45,6 +45,7 @@ failure). Buddy-kit additions are marked ★.
 | ★`{"cmd":"hub","off":true}` | stop + forget the hub |
 | ★`{"cmd":"jiggler","on":bool}` | BLE mouse jiggler mode (persisted); status reports `jiggler {on,hid}` |
 | ★`{"cmd":"ota","url":"http://…/x.bin"}` | pull + flash + reboot (see docs/ota.md); status reports `ota {slot}` |
+| ★`{"cmd":"vdp","on":bool}` | stream the canvas as dirty stripes (USB only); `"full":true` forces a keyframe |
 
 ## Folder push (character install)
 
@@ -86,6 +87,25 @@ When the hub is a fleet server (see cloud.md), the device also sends
 That's the whole contract — an M3 Cloudflare Worker only needs these two
 routes. Local dev hub: `python3 tools/test_hub.py` (+ `POST /queue` to
 enqueue lines for the device).
+
+## ★ Virtual display (lib/virtual-display)
+
+A framebuffer tee, not a renderer: the lego hashes the logical canvas in
+2-row stripes and ships *changed* stripes as JSON lines, so a client paints
+the exact pixels the firmware rendered (ADR 011):
+
+```
+host → device   {"cmd":"vdp","on":true|false}   start (keyframe first) / stop
+                {"cmd":"vdp","full":true}       force a full keyframe
+device → host   {"vdp":"info","w":184,"h":224,"sh":2}
+                {"vdp":"s","y":12,"b":"<base64 RGB565-LE, sh rows>"}
+```
+
+Frames are paced (≤3 stripes ≈ 3 KB per loop tick; a full 184×224 keyframe
+lands in ~2 s) and may tear across stripes mid-animation — fine for a
+preview. The app routes frames to **USB only**: BLE NUS would fragment the
+~1 KB lines and the hub poll would flood. Browser client:
+`lib/virtual-display/viewer/index.html` (WebSerial; mind the DTR reset).
 
 ## Dev tools (apps/buddy/tools/)
 

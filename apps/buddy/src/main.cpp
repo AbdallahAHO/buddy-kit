@@ -45,6 +45,7 @@ static void startBt() {
 #include "dev_ota.h"
 #include "wifi_link.h"
 #include "ui_canvas.h"
+#include "virtual_display.h"
 // LED replaced by AMOLED border-flash via hwBorderAlert() — no GPIO LED.
 
 // PersonaState comes from agent_state.h (via agent_link.h).
@@ -412,6 +413,7 @@ void loop() {
     overlayDraw(spr);
     hwDisplayPush();
   }
+  virtualDisplayTick();   // tee changed canvas stripes to the vdp client
 
   // Face-down nap: dim immediately, pause animations, accumulate sleep time.
   // Skipped during approval — you're holding it to read, not sleeping it.

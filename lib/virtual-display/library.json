@@ -1,0 +1,10 @@
+{
+  "name": "buddy-virtual-display",
+  "version": "0.1.0",
+  "description": "Framebuffer tee: streams the logical canvas as dirty base64 stripes in JSON lines over any ByteSource, so a browser shows the real pixels the real render code produced. Heapless, Arduino-free.",
+  "license": "MIT",
+  "dependencies": [
+    { "name": "buddy-line-bus" },
+    { "owner": "bblanchon", "name": "ArduinoJson", "version": "^7.0.0" }
+  ]
+}

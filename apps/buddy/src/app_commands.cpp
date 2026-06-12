@@ -18,9 +18,14 @@
 #include "hid_mouse.h"
 #include "jiggler.h"
 #include "ota.h"
+#include "virtual_display.h"
 #include <esp_ota_ops.h>
 
 LineOut gLineOut;
+
+// vdp frames go to USB only: stripe lines run ~1 KB, which BLE NUS would
+// fragment and the hub's 1 Hz POST would flood. Acks still fan out.
+static LineOut vdpOut;
 
 // ---------------------------------------------------------------------------
 // FileSink: LittleFS under /characters/, wipe-all-on-begin policy. Bodies
@@ -277,6 +282,13 @@ static bool cmdOta(JsonDocument& doc, void*) {
   return true;
 }
 
+// {"cmd":"vdp","on":true|false} → stream the canvas as base64 stripes (USB)
+// {"cmd":"vdp","full":true}     → force a full keyframe
+static bool cmdVdp(JsonDocument& doc, void*) {
+  lineBusAck(gLineOut, "vdp", virtualDisplayCmd(doc));
+  return true;
+}
+
 static const CmdEntry APP_CMDS[] = {
   { "name",    cmdName    },
   { "species", cmdSpecies },
@@ -287,6 +299,7 @@ static const CmdEntry APP_CMDS[] = {
   { "hub",     cmdHub     },
   { "jiggler", cmdJiggler },
   { "ota",     cmdOta     },
+  { "vdp",     cmdVdp     },
 };
 
 bool appCommand(JsonDocument& doc) {
@@ -304,6 +317,8 @@ void appCommandsInit() {
   gLineOut.add(&bleByteSource());
   gLineOut.add(&httpByteSource());
   filePushInit(&APP_FILE_SINK, &gLineOut);
+  vdpOut.add(&usbSerialSource());
+  virtualDisplayInit((const uint16_t*)hwCanvas()->getFramebuffer(), W, H, &vdpOut);
 #ifndef BUDDY_FW_VERSION
 #define BUDDY_FW_VERSION "dev"
 #endif

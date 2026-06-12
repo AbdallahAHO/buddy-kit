@@ -26,6 +26,7 @@ Cloudflare Worker instead of an AMOLED pet fed by BLE).
 │ lib/file-push      chunked transfer protocol (FileSink)      │  testable →
 │ lib/transport-usb / transport-ble / transport-http           │
 │ lib/wifi-link      provisioning + connection lifecycle       │
+│ lib/virtual-display  framebuffer tee → browser viewer        │
 ├──────────────────────────────────────────────────────────────┤
 │ hal/hw             display/input/power/imu/rtc/audio         │
 │ hal/boards         one capability header per board           │

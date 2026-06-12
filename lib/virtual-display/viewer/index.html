@@ -1,0 +1,124 @@
+<!doctype html>
+<!-- vdp viewer: paints the device's real framebuffer from {"vdp":"s",...}
+     stripe lines over WebSerial. No build, no deps — open the file in
+     Chrome/Edge (WebSerial), plug the board in, Connect. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>buddy-kit · virtual display</title>
+<style>
+  body { background:#111; color:#ccc; font:13px/1.5 ui-monospace,monospace;
+         display:flex; flex-direction:column; align-items:center; gap:10px;
+         padding:20px; }
+  h1   { font-size:14px; color:#888; font-weight:normal; margin:0; }
+  #screen { image-rendering:pixelated; background:#000;
+            border:1px solid #333; border-radius:14px; }
+  .bar { display:flex; gap:8px; align-items:center; }
+  button, input { background:#222; color:#ccc; border:1px solid #444;
+                  border-radius:4px; padding:4px 10px; font:inherit; }
+  button:hover { border-color:#888; cursor:pointer; }
+  #stat { color:#5a5; min-width:220px; }
+  #cmd  { width:320px; }
+  #log  { width:560px; height:140px; overflow-y:auto; background:#181818;
+          border:1px solid #333; border-radius:4px; padding:6px;
+          white-space:pre-wrap; word-break:break-all; color:#9a9; }
+</style>
+</head>
+<body>
+<h1>buddy-kit · virtual display</h1>
+<canvas id="screen" width="184" height="224" style="width:368px;height:448px"></canvas>
+<div class="bar">
+  <button id="connect">Connect</button>
+  <button id="key" disabled>Keyframe</button>
+  <button id="snap" disabled>Save PNG</button>
+  <span id="stat">disconnected</span>
+</div>
+<div class="bar">
+  <input id="cmd" placeholder='{"cmd":"status"}' disabled>
+  <button id="send" disabled>Send</button>
+</div>
+<div id="log"></div>
+<script>
+const cv = document.getElementById('screen'), cx = cv.getContext('2d');
+const stat = document.getElementById('stat'), log = document.getElementById('log');
+let port = null, writer = null, stripes = 0, bytes = 0;
+
+function logLine(s) {
+  log.textContent += s + '\n';
+  log.scrollTop = log.scrollHeight;
+}
+
+async function sendLine(s) {
+  if (writer) await writer.write(new TextEncoder().encode(s + '\n'));
+}
+
+function paintStripe(y, b64) {
+  const raw = atob(b64), n = raw.length / 2, w = cv.width;
+  const img = cx.createImageData(w, n / w);
+  for (let i = 0; i < n; i++) {
+    // RGB565 little-endian → RGBA
+    const c = raw.charCodeAt(2*i) | (raw.charCodeAt(2*i + 1) << 8);
+    img.data[4*i]     = (c >> 8) & 0xF8;
+    img.data[4*i + 1] = (c >> 3) & 0xFC;
+    img.data[4*i + 2] = (c << 3) & 0xF8;
+    img.data[4*i + 3] = 255;
+  }
+  cx.putImageData(img, 0, y);
+  stripes++; bytes += raw.length;
+}
+
+function handle(line) {
+  let m;
+  try { m = JSON.parse(line); } catch { logLine(line); return; }
+  if (m.vdp === 's') { paintStripe(m.y, m.b); return; }
+  if (m.vdp === 'info') {
+    cv.width = m.w; cv.height = m.h;
+    cv.style.width = m.w * 2 + 'px'; cv.style.height = m.h * 2 + 'px';
+    logLine(`vdp: ${m.w}×${m.h}, stripe ${m.sh}`);
+    return;
+  }
+  logLine(line);
+}
+
+document.getElementById('connect').onclick = async () => {
+  port = await navigator.serial.requestPort();
+  await port.open({ baudRate: 115200 });
+  writer = port.writable.getWriter();
+  // Opening the port DTR-resets the chip — let it boot before talking.
+  stat.textContent = 'booting (DTR reset)…';
+  await new Promise(r => setTimeout(r, 2500));
+  await sendLine('{"cmd":"vdp","on":true}');
+  for (const id of ['key','snap','cmd','send']) document.getElementById(id).disabled = false;
+  setInterval(() => { stat.textContent =
+    `${stripes} stripes · ${(bytes/1024).toFixed(0)} KB`; }, 500);
+
+  const reader = port.readable.getReader();
+  let buf = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += new TextDecoder().decode(value);
+    let nl;
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (line) handle(line);
+    }
+  }
+};
+
+document.getElementById('key').onclick  = () => sendLine('{"cmd":"vdp","full":true}');
+document.getElementById('snap').onclick = () => {
+  const a = document.createElement('a');
+  a.download = 'buddy-screen.png'; a.href = cv.toDataURL(); a.click();
+};
+document.getElementById('send').onclick = () => {
+  const i = document.getElementById('cmd');
+  if (i.value.trim()) { sendLine(i.value.trim()); logLine('→ ' + i.value.trim()); }
+};
+document.getElementById('cmd').onkeydown = e => {
+  if (e.key === 'Enter') document.getElementById('send').onclick();
+};
+</script>
+</body>
+</html>

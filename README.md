@@ -28,6 +28,7 @@ apps/buddy          the composition root (~470-line main.cpp)
   lib/hid-mouse     BLE HID mouse on the shared GATT server (jiggler mode)
   lib/ota           wireless firmware update (HTTP pull, dual-OTA slots)
   lib/transport-http  hub polling as a ByteSource (GET /poll, POST /push) over wifi-link
+  lib/virtual-display framebuffer tee → live browser viewer over WebSerial
   lib/faces         18 ASCII species + GIF character player (7-state persona contract)
   hal/hw            display/input/power/imu/rtc/audio, stateless, board-flag driven
   hal/boards        one capability header per board, selected via -DBOARD_*
