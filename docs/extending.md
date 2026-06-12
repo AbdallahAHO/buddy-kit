@@ -1,7 +1,7 @@
 # Extending
 
 Recipes, ordered by frequency. Every recipe ends the same way: build, flash
-to the C6, exercise it, and update the matching doc (see ../CLAUDE.md).
+to the C6, exercise it, and update the matching doc (see ../AGENTS.md).
 
 ## Add a settings / menu / reset row
 

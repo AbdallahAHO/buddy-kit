@@ -29,3 +29,4 @@ lokalise/lupo-ui's `docs/decisions/`, trimmed for a solo repo.
 - [006](006-dual-ota-partition-table.md) — Dual-OTA partition table keeps nvs/spiffs offsets fixed
 - [007](007-devices-poll-the-hub.md) — Devices poll the hub instead of holding Durable Object connections
 - [008](008-nimble-on-c6-bluedroid-on-s3.md) — NimBLE on the C6, Bluedroid on the S3 boards
+- [009](009-agents-md-adrs-skills.md) — Agent rules live in vendor-neutral AGENTS.md; decisions live in ADRs; skills under .agents/skills/

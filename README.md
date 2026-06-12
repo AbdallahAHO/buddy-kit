@@ -8,7 +8,7 @@ first composition; the layers are reusable for any desktop-to-gadget bridge
 
 **Full documentation: [docs/](docs/README.md)** — architecture, rendering
 tree, data flow, input, protocol, connectivity, hardware, extending recipes.
-Contribution rules (incl. the docs-stay-true contract): [CLAUDE.md](CLAUDE.md).
+Contribution rules (incl. the docs-stay-true contract): [AGENTS.md](AGENTS.md).
 
 ## Layers
 

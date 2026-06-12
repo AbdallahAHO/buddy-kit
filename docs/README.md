@@ -16,6 +16,6 @@ Reading order if you're new:
 | [extending.md](extending.md) | Recipes: add a screen, a menu row, a transport, a face, a board, an app |
 | [decisions/](decisions/README.md) | Architecture decision records — the *why* behind every material choice |
 
-Rules for keeping these honest are in the repo-root [CLAUDE.md](../CLAUDE.md):
+Rules for keeping these honest are in the repo-root [AGENTS.md](../AGENTS.md):
 every code change that touches a documented behavior updates its doc in the
 same commit.
