@@ -5,8 +5,8 @@ description: Write an architecture decision record in docs/decisions/ — when a
 
 # Write an ADR
 
-Convention: `../../docs/decisions/README.md`. ADRs hold the *why*; the
-matching `docs/*.md` holds the *how*.
+Convention: `docs/decisions/README.md` (paths are from the repo root).
+ADRs hold the *why*; the matching `docs/*.md` holds the *how*.
 
 ## Does this change need one?
 

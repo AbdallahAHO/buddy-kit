@@ -5,9 +5,9 @@ description: Run the buddy-kit fleet hub (Cloudflare Worker) locally and connect
 
 # buddy: local fleet hub loop
 
-The Worker lives in `cloud/`; full contract in `../../docs/cloud.md`
-(routes, auth, fleet OTA flow) and `../../docs/protocol.md` (the
-/poll + /push lines).
+The Worker lives in `cloud/`; full contract in `docs/cloud.md` (routes,
+auth, fleet OTA flow) and `docs/protocol.md` (the /poll + /push lines).
+Paths are from the repo root.
 
 ## Start it
 
@@ -42,7 +42,7 @@ Every 1 s while Wi-Fi is ONLINE and a hub URL is set, the device drains
 its TX ring → `POST /push`, then `GET /poll` → RX ring, feeding the same
 LineFramer as USB/BLE — so all commands, acks, and file push work over
 the hub unchanged. Polling-not-WebSockets rationale:
-`../../docs/decisions/007-devices-poll-the-hub.md`.
+`docs/decisions/007-devices-poll-the-hub.md`.
 
 Hub health shows in the device's status ack and info pages. Plain
 `http://` only for now — a deployed `https://` Worker needs the

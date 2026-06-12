@@ -5,7 +5,8 @@ description: Ship a buddy-kit firmware release to the fleet over OTA — preflig
 
 # buddy: release over fleet OTA
 
-Full OTA mechanics: `../../docs/ota.md`. Fleet flow: `../../docs/cloud.md`.
+Full OTA mechanics: `docs/ota.md`. Fleet flow: `docs/cloud.md` (paths
+are from the repo root).
 
 ## Preflight
 
@@ -47,9 +48,10 @@ the new fw version, and the status ack's `ota.slot` flipped
 ## Rollback
 
 - The bootloader auto-rolls-back on repeated boot failure (dual-slot
-  mechanism — `../../docs/decisions/006-dual-ota-partition-table.md`).
+  mechanism — `docs/decisions/006-dual-ota-partition-table.md`).
 - A *running-but-wrong* image: broadcast the previous version — OTA
   doesn't care about version direction.
 - A device that won't come back: USB reflash, worst case
-  `../esp/boards/wsc6-amoled-2.16/board.py restore` from the repo parent.
-  NVS/spiffs offsets are fixed, so reflashes preserve creds + characters.
+  `../esp/boards/wsc6-amoled-2.16/board.py restore` from the buddy-kit
+  repo root (esp is a sibling workspace). NVS/spiffs offsets are fixed,
+  so reflashes preserve creds + characters.

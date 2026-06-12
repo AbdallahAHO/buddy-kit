@@ -5,7 +5,8 @@ description: Build, flash, and verify buddy-kit firmware on the ESP32-C6/S3 boar
 
 # buddy: build, flash, verify
 
-Working directory: `apps/buddy`. Hardware truth: `../../docs/hardware.md`.
+Working directory: `apps/buddy`. Hardware truth: `docs/hardware.md`
+(paths are from the repo root).
 
 ## Envs
 
@@ -30,7 +31,7 @@ python tools/test_xfer.py        # file push protocol
 
 Build-green is not done — flash and exercise on the C6 before commit.
 UI changes additionally need the physical checklist in
-`../../docs/extending.md` (Testing changes).
+`docs/extending.md` (Testing changes).
 
 ## Serial probing protocol
 
@@ -60,5 +61,6 @@ See [references/panic-triage.md](references/panic-triage.md).
 ## Recovery
 
 Full-chip factory restore lives in the sibling esp workspace:
-`../esp/boards/wsc6-amoled-2.16/board.py restore` (run from the repo
-parent). It only needs esptool, not PlatformIO.
+`../esp/boards/wsc6-amoled-2.16/board.py restore` (run from the
+buddy-kit repo root — esp sits next to it). It only needs esptool, not
+PlatformIO.
