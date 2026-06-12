@@ -3,7 +3,7 @@
 Minimal hub for the transport-http lego. The device polls GET /poll for
 newline-delimited JSON and POSTs its replies to /push.
 
-  python tools/test_hub.py [port]          # serve (default 8787)
+  python3 tools/test_hub.py [port]          # serve (default 8787)
   curl -d '{"cmd":"status"}' http://localhost:8787/queue   # enqueue for device
 
 Everything the device pushes is printed to stdout.

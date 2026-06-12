@@ -5,6 +5,7 @@ import json, time, serial, glob, sys
 ports = glob.glob('/dev/cu.usbserial-*') + glob.glob('/dev/cu.usbmodem*')
 if not ports: sys.exit("no stick found")
 s = serial.Serial(ports[0], 115200)
+time.sleep(2)   # opening the port DTR-resets the chip; let it boot
 print(f"writing to {ports[0]} — watch the Stick\n")
 
 states = [
