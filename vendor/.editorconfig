@@ -1,0 +1,3 @@
+# Vendored upstream code — keep editors from reformatting it (whitespace
+# diffs against upstream are noise). Comments and style here are upstream's.
+root = true
