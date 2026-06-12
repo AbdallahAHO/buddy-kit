@@ -1,0 +1,62 @@
+# Dormant until a remote exists — runs on the first push to GitHub.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  firmware:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - waveshare-esp32c6-touch-amoled-2-16
+          - waveshare-esp32s3-touch-amoled-1-8
+          - waveshare-esp32s3-touch-amoled-1-75c
+          - waveshare-esp32s3-touch-amoled-2-16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            apps/buddy/.pio
+          key: pio-${{ matrix.env }}-${{ hashFiles('apps/buddy/platformio.ini') }}
+          restore-keys: pio-${{ matrix.env }}-
+      - run: pip install platformio
+      - run: pio run -d apps/buddy -e ${{ matrix.env }}
+
+  cloud:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: cloud/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: cloud
+      - run: pnpm run typecheck
+        working-directory: cloud
+
+  # M2 hook — enable once test/ grows real native tests:
+  # native-tests:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.12'
+  #     - run: pip install platformio
+  #     - run: pio test -e native
+  #       working-directory: apps/buddy
