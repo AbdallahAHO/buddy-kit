@@ -1,0 +1,193 @@
+{
+  "name": "wifi-pairing",
+  "description": "QR + captive-portal Wi-Fi pairing screen: WIFI: QR phones auto-join, live join status, settings-menu entry, focus-ladder rungs, auto-close 5 s after the join succeeds. Composes the wifi-link lego (headless portal/join state machine) with ui-canvas atoms.",
+  "legos": [
+    "wifi-link",
+    "ui-canvas"
+  ],
+  "files": {
+    "files/wifi_setup.cpp": "src/screens/wifi_setup.cpp",
+    "files/wifi_setup.h": "src/screens/wifi_setup.h"
+  },
+  "patches": [
+    {
+      "file": "src/app_state.h",
+      "anchor": [
+        "extern uint8_t displayMode;"
+      ],
+      "insert": "after",
+      "lines": [
+        "extern bool wifiSetupOpen;   // (menu overlays live in overlays.h)"
+      ]
+    },
+    {
+      "file": "src/main.cpp",
+      "anchor": [
+        "#include \"screens/passkey.h\""
+      ],
+      "insert": "after",
+      "lines": [
+        "#include \"screens/wifi_setup.h\""
+      ]
+    },
+    {
+      "file": "src/main.cpp",
+      "anchor": [
+        "void triggerOneShot(PersonaState s, uint32_t durMs) {"
+      ],
+      "insert": "before",
+      "lines": [
+        "bool    wifiSetupOpen = false;   // QR pairing screen (drawWifiSetup)"
+      ]
+    },
+    {
+      "file": "src/main.cpp",
+      "anchor": [
+        "    _lastWifiState = ws;",
+        "  }"
+      ],
+      "insert": "after",
+      "lines": [
+        "  // Pairing screen auto-closes shortly after the join succeeds.",
+        "  static uint32_t _wifiOnlineSince = 0;",
+        "  if (wifiSetupOpen && wifiLinkState() == WIFI_LINK_ONLINE) {",
+        "    if (!_wifiOnlineSince) _wifiOnlineSince = millis();",
+        "    else if (millis() - _wifiOnlineSince > 5000) { _wifiOnlineSince = 0; wifiSetupClose(); }",
+        "  } else {",
+        "    _wifiOnlineSince = 0;",
+        "  }"
+      ]
+    },
+    {
+      "file": "src/main.cpp",
+      "anchor": [
+        "    else if (blePasskey()) passkeyDraw(spr);"
+      ],
+      "insert": "after",
+      "lines": [
+        "    else if (wifiSetupOpen) wifiSetupDraw(spr);"
+      ]
+    },
+    {
+      "file": "src/main.cpp",
+      "anchor": [
+        "          || filePushActive()"
+      ],
+      "insert": "after",
+      "lines": [
+        "          || wifiSetupOpen"
+      ]
+    },
+    {
+      "file": "src/app_commands.cpp",
+      "anchor": [
+        "    wifiLinkStartPortal();"
+      ],
+      "insert": "after",
+      "lines": [
+        "    wifiSetupOpen = true;          // main.cpp shows the QR screen"
+      ]
+    },
+    {
+      "file": "src/input_router.cpp",
+      "anchor": [
+        "#include \"screens/pet.h\""
+      ],
+      "insert": "after",
+      "lines": [
+        "#include \"screens/wifi_setup.h\""
+      ]
+    },
+    {
+      "file": "src/input_router.cpp",
+      "anchor": [
+        "  if (overlayActive()) { overlayClose(); }"
+      ],
+      "insert": "before",
+      "lines": [
+        "  if (wifiSetupOpen) { wifiSetupClose(); } else"
+      ]
+    },
+    {
+      "file": "src/input_router.cpp",
+      "anchor": [
+        "  if (!btnALong && !swallowBtnA) {"
+      ],
+      "insert": "after",
+      "lines": [
+        "    if (wifiSetupOpen) { beep(1800, 30); wifiSetupClose(); } else"
+      ]
+    },
+    {
+      "file": "src/input_router.cpp",
+      "anchor": [
+        "  if (swallowBtnB) { swallowBtnB = false; }",
+        "  else"
+      ],
+      "insert": "after",
+      "lines": [
+        "  if (wifiSetupOpen) { beep(1800, 30); wifiSetupClose(); } else"
+      ]
+    },
+    {
+      "file": "src/input_router.cpp",
+      "anchor": [
+        "               && !overlayActive() && !inPrompt"
+      ],
+      "insert": "after",
+      "lines": [
+        "               && !wifiSetupOpen"
+      ]
+    },
+    {
+      "file": "src/input_router.cpp",
+      "anchor": [
+        "if (tp.justPressed) { _tpStartX = tp.x; _tpStartY = tp.y; _tpStartMs = millis(); }"
+      ],
+      "insert": "after",
+      "lines": [
+        "",
+        "if (wifiSetupOpen && tp.justPressed) { beep(1800, 30); wifiSetupClose(); }"
+      ]
+    },
+    {
+      "file": "src/overlays.cpp",
+      "anchor": [
+        "static void vClockRot(char* b, size_t c, uint16_t*) {"
+      ],
+      "insert": "before",
+      "lines": [
+        "static void vWifiState(char* b, size_t c, uint16_t* col) {",
+        "  WifiLinkState ws = wifiLinkState();",
+        "  if (ws == WIFI_LINK_ONLINE)       { snprintf(b, c, \" up\"); *col = GREEN; }",
+        "  else if (ws == WIFI_LINK_JOINING) snprintf(b, c, \"...\");",
+        "  else b[0] = 0;",
+        "}"
+      ]
+    },
+    {
+      "file": "src/overlays.cpp",
+      "anchor": [
+        "static bool cLed(uint8_t)     { settings().led = !settings().led; settingsSave(); return true; }"
+      ],
+      "insert": "before",
+      "lines": [
+        "static bool cWifiSetup(uint8_t) {",
+        "  wifiLinkStartPortal();",
+        "  wifiSetupOpen = true;",
+        "  return false;",
+        "}"
+      ]
+    },
+    {
+      "file": "src/overlays.cpp",
+      "anchor": [
+        "  { \"led\",        vLed,       cLed,      false },"
+      ],
+      "insert": "before",
+      "lines": [
+        "  { \"wifi setup\", vWifiState, cWifiSetup,false },"
+      ]
+    }
+  ]
+}

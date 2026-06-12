@@ -69,6 +69,26 @@ composition; an e-paper dashboard would reuse transports + agent-state +
 wifi-link + ui-canvas wholesale and replace faces + screens + the push
 strategy.
 
+## Blocks (copy-in compositions)
+
+A finished composition — screen + menu row + ladder rungs + store bit —
+can be packaged as a **block**: verbatim source under `blocks/<name>/`
+plus the whole lines it owns in the central tables (ADR 012):
+
+```bash
+python3 tools/blocks.py add wifi-pairing      # copy files + patch tables
+python3 tools/blocks.py rm wifi-pairing       # exact inverse (build stays green)
+python3 tools/blocks.py verify wifi-pairing   # installed and undrifted?
+python3 tools/blocks.py export wifi-pairing   # refresh block from the app
+```
+
+The loop: iterate on the screen *in the app* like any other code, then
+`export` to update the block. Blocks patch whole lines only, which the
+seam idiom guarantees: focus-ladder rungs are one line ending in `else`,
+multi-line conditions keep one term per line, overlay row counts are
+computed from the table. Keep new hook points in that shape and any
+screen can be carved into a block later.
+
 ## Testing changes
 
 | Layer | How |

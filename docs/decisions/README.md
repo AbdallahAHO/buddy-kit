@@ -34,3 +34,4 @@ The `adr` skill (`.agents/skills/adr/`) walks through writing one.
 - [009](009-agents-md-adrs-skills.md) — Agent rules live in vendor-neutral AGENTS.md; decisions live in ADRs; skills under .agents/skills/
 - [010](010-dormant-ci-workflow.md) — CI is a dormant GitHub Actions workflow: pio build matrix + cloud typecheck
 - [011](011-virtual-display-is-a-framebuffer-tee.md) — The virtual display is a framebuffer tee, not a second renderer
+- [012](012-blocks-are-source-you-own.md) — Blocks are app source you copy in, not a library you depend on

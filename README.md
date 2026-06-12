@@ -33,6 +33,8 @@ apps/buddy          the composition root (~470-line main.cpp)
   hal/hw            display/input/power/imu/rtc/audio, stateless, board-flag driven
   hal/boards        one capability header per board, selected via -DBOARD_*
   vendor/           upstream-vendored driver libs (ES8311, XCA9554, DriveBus)
+  blocks/           copy-in compositions (screen + menu row + ladder rungs);
+                    tools/blocks.py add/rm/export — see docs/extending.md
 ```
 
 Dependency rule: everything points down, nothing points up. App-policy stays
