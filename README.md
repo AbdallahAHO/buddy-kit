@@ -53,8 +53,8 @@ BLE stack and board are selected per env via `-DBUDDY_BLE_*` / `-DBOARD_*`.
 
 ```bash
 cd apps/buddy
-python tools/test_serial.py    # drive persona states over USB
-python tools/test_xfer.py      # stream a character (GIF set) over USB
+python3 tools/test_serial.py    # drive persona states over USB
+python3 tools/test_xfer.py      # stream a character (GIF set) over USB
 ```
 
 Known quirk: on the C6's native USB, ~1% of chunk *acks* drop at 4 KB
@@ -84,7 +84,7 @@ fleet over the air. See [docs/cloud.md](docs/cloud.md).
 `{"cmd":"hub","url":"http://host:8787"}` points the device at a hub API it
 polls once a second (`GET /poll` for pending JSON lines, `POST /push` for
 its replies) whenever Wi-Fi is up. Persisted; survives reboot. Local dev
-hub: `python tools/test_hub.py`, then
+hub: `python3 tools/test_hub.py`, then
 `curl -d '{"cmd":"status"}' http://localhost:8787/queue` and watch the
 device answer over the air.
 

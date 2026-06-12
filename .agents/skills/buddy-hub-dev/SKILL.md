@@ -1,6 +1,6 @@
 ---
 name: buddy-hub-dev
-description: Run the buddy-kit fleet hub (Cloudflare Worker) locally and connect a device to it — wrangler dev, D1 init, PUBLIC_URL gotcha, device registration. Use when developing cloud/, testing the hub, registering a device, debugging /poll //push, or when a device won't appear in the dashboard.
+description: Run the buddy-kit fleet hub (Cloudflare Worker) locally and connect a device to it — wrangler dev, D1 init, PUBLIC_URL gotcha, device registration. Use when developing cloud/, testing the hub, registering a device, debugging /poll + /push, or when a device won't appear in the dashboard.
 ---
 
 # buddy: local fleet hub loop
@@ -33,7 +33,7 @@ Over USB or BLE:
 {"cmd":"hub","url":"http://<your-lan-ip>:8787","token":"dev-fleet-key"}
 ```
 
-Persists to NVS (`buddy/huburl`); the device appears in the dashboard
+Persists to NVS (`buddy/huburl` + `hubtok`); the device appears in the dashboard
 (`http://localhost:8787/`, admin key once) within one poll.
 
 ## How it moves

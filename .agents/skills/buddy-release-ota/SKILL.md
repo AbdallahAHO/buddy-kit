@@ -13,8 +13,10 @@ are from the repo root).
 1. Clean tree: `git status` — no uncommitted changes ride into a release.
 2. Docs contract honored (AGENTS.md table) — including an ADR if the
    release contains a material decision.
-3. Version bumped where the firmware reports it (the status ack's fw
-   field must distinguish old from new, or step 6 can't verify).
+3. Version bumped: `BUDDY_FW_VERSION` in `apps/buddy/platformio.ini` —
+   it's set per env, so bump all four. The device reports it via the
+   `X-Fw` poll header; old-vs-new shows in the dashboard's fw column
+   (NOT in the status ack), or Verify below can't tell them apart.
 4. Device(s) on Wi-Fi with a hub URL set (`{"cmd":"status"}` shows both).
 
 ## Ship

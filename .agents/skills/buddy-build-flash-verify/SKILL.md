@@ -25,8 +25,8 @@ Port and baud (460800 for the C6) are pinned in `platformio.ini`.
 cd apps/buddy
 pio run -e waveshare-esp32c6-touch-amoled-2-16 -t upload
 # wait for reboot, then probe:
-python tools/test_serial.py      # personas via USB
-python tools/test_xfer.py        # file push protocol
+python3 tools/test_serial.py      # personas via USB
+python3 tools/test_xfer.py        # file push protocol
 ```
 
 Build-green is not done — flash and exercise on the C6 before commit.
@@ -37,10 +37,12 @@ UI changes additionally need the physical checklist in
 
 - 115200 baud. **Opening the port DTR-resets the chip** — wait ~2 s after
   open before the first command (the test tools do this).
-- Probe with `{"cmd":"status"}\n` — the ack reports fw version, heap,
-  wifi state, and the running OTA slot.
+- Probe with `{"cmd":"status"}\n` — the ack reports heap (`sys.heap`),
+  wifi state, hub health, and the running OTA slot (`ota.slot`). It does
+  NOT carry the fw version — that travels in the `X-Fw` poll header and
+  shows in the hub dashboard.
 - Prefer `tools/test_serial.py` / `test_xfer.py` over hand-rolled probes;
-  they already handle the reset wait and framing.
+  both wait out the DTR reset (and `test_xfer.py` handles ack framing).
 
 ## TRAPS
 

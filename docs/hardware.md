@@ -54,7 +54,7 @@ vanished after reflashes. The current shape is the standard Arduino no-OTA
 layout and is load-bearing. Upstream still has the bug (PR-worthy).
 
 NVS namespace `"buddy"` holds everything: stats, settings (`s_*`), petname/
-owner, species, `wssid`/`wpass`, `huburl`, `s_jig`. App-only uploads preserve it;
+owner, species, `wssid`/`wpass`, `huburl`/`hubtok`, `s_jig`. App-only uploads preserve it;
 `factory reset` (or `pio run -t erase`) wipes it.
 
 ## C6 native-USB (HWCDC) quirks — field-verified

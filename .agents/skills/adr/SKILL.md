@@ -29,8 +29,9 @@ doc update, not an ADR.
 4. Status `approved`, date today (solo repo: approved at commit time).
 5. Add the index line at the bottom of `docs/decisions/README.md` —
    **same commit**.
-6. If a doc carries the *how*, add a 1-line `Rationale: [ADR NNN](…)`
-   cross-ref there (see hardware.md / architecture.md for the pattern).
+6. If a doc carries the *how*, add a 1-line `Rationale: ADR NNN`
+   cross-ref there, linked to the ADR file (see hardware.md /
+   architecture.md for the pattern).
 
 ## Immutability
 
