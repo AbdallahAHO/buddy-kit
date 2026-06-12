@@ -29,7 +29,7 @@ jobs:
             apps/buddy/.pio
           key: pio-${{ matrix.env }}-${{ hashFiles('apps/buddy/platformio.ini') }}
           restore-keys: pio-${{ matrix.env }}-
-      - run: pip install platformio
+      - run: pip install 'platformio==6.*'
       - run: pio run -d apps/buddy -e ${{ matrix.env }}
 
   cloud:

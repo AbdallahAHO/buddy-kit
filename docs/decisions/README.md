@@ -32,3 +32,4 @@ The `adr` skill (`.agents/skills/adr/`) walks through writing one.
 - [007](007-devices-poll-the-hub.md) — Devices poll the hub (/poll + /push) instead of holding Durable Object connections
 - [008](008-nimble-on-c6-bluedroid-on-s3.md) — NimBLE on the C6, Bluedroid on the S3 boards
 - [009](009-agents-md-adrs-skills.md) — Agent rules live in vendor-neutral AGENTS.md; decisions live in ADRs; skills under .agents/skills/
+- [010](010-dormant-ci-workflow.md) — CI is a dormant GitHub Actions workflow: pio build matrix + cloud typecheck
