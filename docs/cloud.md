@@ -1,7 +1,8 @@
 # Cloud — fleet hub & OTA (`cloud/`)
 
 A Cloudflare Worker that *is* the device hub (the `/poll` + `/push` contract
-from [protocol.md](protocol.md)) **and** a fleet-management API: a registry of
+from [protocol.md](protocol.md) — why polling, not WebSockets:
+[ADR 007](decisions/007-devices-poll-the-hub.md)) **and** a fleet-management API: a registry of
 devices, firmware storage, and broadcast OTA. This is the M3 endgame — with
 a hub in the cloud, the buddy needs no desktop and no USB; it polls for work
 and pulls its own firmware updates.

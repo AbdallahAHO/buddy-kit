@@ -45,7 +45,8 @@ include app headers. When a lib needs app policy, the app injects it:
 
 Injection is **link-time** (plain functions the app must define), not
 function pointers — a missing impl is a loud link error, and there's zero
-runtime overhead.
+runtime overhead. Rationale:
+[ADR 001](decisions/001-injected-link-time-contracts.md).
 
 ## The React / atomic-design mapping
 
@@ -73,6 +74,8 @@ is: **render functions never mutate shared state.**
 - `lib/agent-state` and `lib/line-bus` must stay Arduino-free (they compile
   under PlatformIO's `native` platform for tests).
 
+Rationale: [ADR 002](decisions/002-c6-heap-is-the-floor.md).
+
 ## Packaging
 
 PlatformIO private libs: each `lib/<name>` has a `library.json` declaring its
@@ -81,4 +84,6 @@ own registry deps; apps reach them via `lib_extra_dirs`. LDF runs in default
 the pioarduino platform. The two BLE stack impls coexist in transport-ble
 behind `-DBUDDY_BLE_NIMBLE` / `-DBUDDY_BLE_BLUEDROID`; the C6 env also
 `lib_ignore`s the core `BLE` lib because chain-mode LDF scans the
-`#ifdef`'d-out Bluedroid impl.
+`#ifdef`'d-out Bluedroid impl. Rationale:
+[ADR 004](decisions/004-ldf-stays-on-chain-mode.md) (LDF mode) and
+[ADR 008](decisions/008-nimble-on-c6-bluedroid-on-s3.md) (two BLE stacks).

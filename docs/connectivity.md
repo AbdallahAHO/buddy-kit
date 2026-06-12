@@ -48,7 +48,8 @@ scan and join without tearing down the phone's session.
 
 ## transport-http (the hub)
 
-A FreeRTOS task (the loop thread never blocks on HTTP):
+A FreeRTOS task (the loop thread never blocks on HTTP — the poll-don't-hold
+rationale is [ADR 007](decisions/007-devices-poll-the-hub.md)):
 
 ```
 every 1 s, while wifi ONLINE and a hub URL is set:

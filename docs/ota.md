@@ -6,6 +6,8 @@ dual-slot one); everything after that is wireless.
 
 ## The partition requirement
 
+Rationale: [ADR 006](decisions/006-dual-ota-partition-table.md).
+
 ESP32 OTA needs **two app slots** so the running firmware writes the new
 image into the inactive one, then otadata flips which boots (with rollback
 on a bad image). `apps/buddy/ota_8mb.csv`:

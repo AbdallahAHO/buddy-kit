@@ -31,6 +31,10 @@ Full-chip recovery (factory snapshot) lives in the esp workspace:
 
 ## Partition table (`apps/buddy/ota_8mb.csv`) — DO NOT reshape casually
 
+Why it's shaped this way: [ADR 005](decisions/005-nvs-ends-at-0xe000.md)
+(NVS boundary) and [ADR 006](decisions/006-dual-ota-partition-table.md)
+(dual-OTA slots, fixed data offsets).
+
 ```
 nvs      0x9000  0x5000     ← must END at 0xe000
 otadata  0xe000  0x2000     ← PlatformIO writes boot_app0.bin here on EVERY upload
