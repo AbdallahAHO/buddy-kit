@@ -21,7 +21,7 @@ spiffs   0x610000 0x1F0000  preserved (LittleFS /characters/)
 `nvs` and `spiffs` keep the offsets from the old single-slot table, so the
 one-time USB reflash onto this layout **preserves Wi-Fi creds, settings and
 installed characters** (verified). Recovery if a flash goes wrong:
-`../../boards/wsc6-amoled-2.16/board.py restore`.
+`../../esp/boards/wsc6-amoled-2.16/board.py restore`.
 
 ## Path 1 — HTTP pull (the product path, `lib/ota`)
 

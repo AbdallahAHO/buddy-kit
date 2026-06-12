@@ -78,10 +78,10 @@ physical checklist in `docs/extending.md`.
 
 ## Context
 
-- Hardware ops (esptool recovery, backups, other boards): the parent
-  workspace `../CLAUDE.md` and `../boards/wsc6-amoled-2.16/`. The C6's
-  factory restore is `../boards/wsc6-amoled-2.16/board.py restore`.
-- Upstream reference clone (read-only): `../reference/claude-desktop-buddy-esp32/`.
+- Hardware ops (esptool recovery, backups, other boards): the sibling esp
+  workspace `../esp/CLAUDE.md` and `../esp/boards/wsc6-amoled-2.16/`. The C6's
+  factory restore is `../esp/boards/wsc6-amoled-2.16/board.py restore`.
+- Upstream reference clone (read-only): `../esp/reference/claude-desktop-buddy-esp32/`.
 - Roadmap: M3 cloud fleet hub DONE (`cloud/`, docs/cloud.md) — verified e2e
   over `wrangler dev`; prod deploy needs device-side HTTPS (WiFiClientSecure).
   Remaining: M2 native tests, M4 e-paper dashboard app, device HTTPS for prod.

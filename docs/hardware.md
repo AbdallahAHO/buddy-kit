@@ -27,7 +27,7 @@ python tools/test_serial.py                                 # drive personas ove
 C6 house rules (from the parent esp workspace): upload at **460800**; if
 esptool can't connect, hold BOOT → tap PWR → release BOOT for download mode.
 Full-chip recovery (factory snapshot) lives in the esp workspace:
-`../../boards/wsc6-amoled-2.16/board.py restore`.
+`../../esp/boards/wsc6-amoled-2.16/board.py restore`.
 
 ## Partition table (`apps/buddy/ota_8mb.csv`) — DO NOT reshape casually
 
