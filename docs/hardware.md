@@ -57,6 +57,12 @@ NVS namespace `"buddy"` holds everything: stats, settings (`s_*`), petname/
 owner, species, `wssid`/`wpass`, `huburl`/`hubtok`, `s_jig`. App-only uploads preserve it;
 `factory reset` (or `pio run -t erase`) wipes it.
 
+The namespace and the `wssid`/`wpass`/`huburl`/`hubtok` keys are a
+**cross-app contract**: glance deliberately reuses them (its `wifi_store.cpp`
+and hub persistence) so a board re-flashed between buddy and glance keeps
+its Wi-Fi creds and hub registration. Renaming any of these keys in one app
+silently breaks the other — change them in both or not at all.
+
 ## C6 native-USB (HWCDC) quirks — field-verified
 
 - **RX ring sized 2048** in setup(): native USB delivers a whole 370-byte

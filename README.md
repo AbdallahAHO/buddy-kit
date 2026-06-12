@@ -19,6 +19,8 @@ apps/buddy          the composition root (~470-line main.cpp)
                                  screen-local state behind tiny APIs
   apps/buddy/src/overlays.cpp    menu/settings/reset as data tables → one ListPanel
   apps/buddy/src/input_router.cpp  raw input → focus ladder (approval > wifi > overlay > screen)
+apps/glance         the second composition: hub-fed fleet status panel —
+                    same legos, no BLE / faces / input routing, one screen
   lib/agent-state   AgentState schema + snapshot apply + persona selector (pure C++)
   lib/line-bus      ByteSource pipe contract, newline framer, ack fan-out, cmd dispatch
   lib/transport-ble NUS BLE bridge (NimBLE for C6, Bluedroid for S3, via -D flag)
@@ -97,4 +99,4 @@ device answer over the air.
 - M3: cloud fleet hub — **done** (`cloud/`, [docs/cloud.md](docs/cloud.md));
   verified e2e over `wrangler dev`. Production deploy needs the device-side
   HTTPS change (WiFiClientSecure in transport-http + lib/ota)
-- M4: e-paper dashboard app (XIAO 7.5") — second composition over the same legos
+- M4: e-paper dashboard app (XIAO 7.5") — another composition over the same legos

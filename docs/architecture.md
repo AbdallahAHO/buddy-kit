@@ -12,12 +12,13 @@ Cloudflare Worker instead of an AMOLED pet fed by BLE).
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ cloud/      — Cloudflare Worker: fleet hub + OTA (see cloud.md)│
-│ apps/buddy — composition root (~470-line main.cpp)           │
+│ apps/buddy — the reference composition (~470-line main.cpp)  │
 │   app_state.h      the store: shared state, one header       │
 │   screens/         organisms: one file per screen            │
 │   overlays.cpp     menus as data tables                      │
 │   input_router.cpp the focus ladder                          │
 │   *_store.cpp      policy impls injected into libs           │
+│ apps/glance — hub-fed status panel (second composition)      │
 ├──────────────────────────────────────────────────────────────┤
 │ lib/ui-canvas      tokens + atoms + ListPanel molecule       │
 │ lib/faces          ASCII species + GIF player (7-state)      │

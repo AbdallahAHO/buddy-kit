@@ -47,6 +47,22 @@ failure). Buddy-kit additions are marked ★.
 | ★`{"cmd":"ota","url":"http://…/x.bin"}` | pull + flash + reboot (see docs/ota.md); status reports `ota {slot}` |
 | ★`{"cmd":"vdp","on":bool}` | stream the canvas as dirty stripes (USB only); `"full":true` forces a keyframe |
 
+### Per-app command surface
+
+The table above is **buddy**, the full composition. **glance** speaks only
+`status` / `wifi` / `hub` / `ota` / `vdp`, with three divergences:
+
+- its `status` ack is a slim blob — `name` fixed to `"glance"`, `sys
+  {up,heap}`, `wifi`, `hub`, `ota` only (no owner/sec/bat/stats/jiggler/fs);
+- `wifi` `"forget":true` is **not implemented** — it acks `ok:false` and
+  leaves the creds untouched;
+- `wifi` `"portal":true` is headless — no QR screen; join the SoftAP and
+  open the portal page manually.
+
+Every other `cmd` (name/owner/species/unpair/jiggler, the whole folder
+push below) is swallowed with **no ack** — don't send buddy-only commands
+to glance and wait on a reply.
+
 ## Folder push (character install)
 
 ```

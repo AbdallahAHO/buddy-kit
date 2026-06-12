@@ -61,13 +61,33 @@ characters need no code — push a folder with per-state GIFs + manifest.json
 
 ## Add an app (the point of the kit)
 
-`apps/<name>/` = `platformio.ini` (lib_extra_dirs at `../../lib`, `../../hal`,
-`../../vendor`) + a main.cpp composing the legos you want + the policy stubs
-the chosen libs require (`faces_store`, `wifi_store`, a `FileSink`,
-`agentStateRandom`) + your screens. The buddy app is the reference
-composition; an e-paper dashboard would reuse transports + agent-state +
-wifi-link + ui-canvas wholesale and replace faces + screens + the push
-strategy.
+`apps/<name>/` = a `platformio.ini` + a main.cpp composing the legos you
+want + the policy stubs those legos require + your screens. Copy from the
+closest app and trim (`apps/glance`, the hub-fed status panel, is this
+recipe exercised for real):
+
+1. `platformio.ini` — keep `lib_extra_dirs` (`../../lib`, `../../hal`,
+   `../../vendor`) and chain-mode LDF; copy your board's `[env:…]` block
+   (build flags, `lib_ignore`, pinned port + baud); trim `lib_deps` to
+   your composition — chain mode means each app declares its own registry
+   deps (glance drops AnimatedGIF with faces, and the NimBLE dep +
+   `-DBUDDY_BLE_*` flag with BLE).
+2. Copy `ota_8mb.csv` in next to it — `board_build.partitions` resolves
+   app-locally, and the layout is load-bearing (hardware.md, ota.md).
+3. Policy stubs only for the legos you chose (the injected-contracts
+   table in architecture.md): wifi-link → `wifi_store.cpp`, faces →
+   `faces_store.cpp`, file-push → a `FileSink`, agent-state →
+   `agentStateRandom()`. A missing stub is a loud link error.
+4. The app owns its own `LineOut gLineOut` and `APP_CMDS[]` dispatch —
+   rules 4 and 6 apply per app.
+5. Add the app's env(s) to the `firmware` matrix in
+   `.github/workflows/ci.yml` (an `include:` entry per app × board) —
+   otherwise the new app gets zero compile coverage and rots.
+
+buddy is the full-featured reference composition; glance is the minimal
+one — no BLE, no faces, no input routing, one screen. If its command
+surface diverges from buddy's, note that in protocol.md's per-app section
+(the docs contract row "any cmd/ack" applies per app).
 
 ## Blocks (copy-in compositions)
 

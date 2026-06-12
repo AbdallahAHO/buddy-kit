@@ -12,11 +12,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        app: [buddy]
         env:
           - waveshare-esp32c6-touch-amoled-2-16
           - waveshare-esp32s3-touch-amoled-1-8
           - waveshare-esp32s3-touch-amoled-1-75c
           - waveshare-esp32s3-touch-amoled-2-16
+        # Apps with a narrower board set get explicit entries (extending.md).
+        include:
+          - app: glance
+            env: waveshare-esp32c6-touch-amoled-2-16
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -26,11 +31,11 @@ jobs:
         with:
           path: |
             ~/.platformio
-            apps/buddy/.pio
-          key: pio-${{ matrix.env }}-${{ hashFiles('apps/buddy/platformio.ini') }}
-          restore-keys: pio-${{ matrix.env }}-
+            apps/${{ matrix.app }}/.pio
+          key: pio-${{ matrix.app }}-${{ matrix.env }}-${{ hashFiles(format('apps/{0}/platformio.ini', matrix.app)) }}
+          restore-keys: pio-${{ matrix.app }}-${{ matrix.env }}-
       - run: pip install 'platformio==6.*'
-      - run: pio run -d apps/buddy -e ${{ matrix.env }}
+      - run: pio run -d apps/${{ matrix.app }} -e ${{ matrix.env }}
 
   cloud:
     runs-on: ubuntu-latest

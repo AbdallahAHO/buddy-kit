@@ -1,6 +1,7 @@
 # Data flow
 
-One parser, three transports, one store.
+One parser, three transports, one store. (This is buddy's pipeline;
+glance's reduced one is at the bottom.)
 
 ```
  USB serial ──┐
@@ -58,6 +59,18 @@ BLE counts as active if bytes arrived within 15 s (desktop keepalive is
 - `hasTokens` → `statsOnBridgeTokens` — cumulative bridge total, delta-
   synced with a **first-sight latch** (device reboot must not re-credit the
   bridge's whole session; bridge restart = total drops = resync silently).
+
+## glance's reduced pipeline (apps/glance)
+
+Same framer and store, two transports (USB + hub — no BLE) and a trimmed
+dispatch: `glance_link.cpp::_applyLine` tries `glanceCommand()` (plain
+`lineBusDispatch` over five cmds — no `filePushHandle`, and no
+`"permission"` fall-through since glance has no prompt UI), and any other
+`{"cmd":…}` doc is swallowed so buddy-only commands never reach
+`agentApplyJson()` and fake liveness. There is no demo/live/asleep ladder;
+glance's `dataPoll()` writes the disconnect state ("no agent data", zeroed
+sessions) into the store straight from the pump when 30 s pass without a
+valid line.
 
 ## Stats persistence (stats.cpp, NVS namespace "buddy")
 
