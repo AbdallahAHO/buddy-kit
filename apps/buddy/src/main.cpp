@@ -479,7 +479,7 @@ void loop() {
           || inPrompt || overlayActive()
           || (int32_t)(now - oneShotUntil) < 0
           || filePushActive()
-                || wifiSetupOpen
+          || wifiSetupOpen
           || blePasskey()) {
     loopMs = 16;
   } else {

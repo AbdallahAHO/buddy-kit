@@ -114,17 +114,15 @@ if (hwAxpBtnEvent() == 0x04) {
 if (hwBtnA().pressedFor(600) && !btnALong && !swallowBtnA) {
   btnALong = true;
   beep(800, 60);
-  if (wifiSetupOpen) { wifiSetupClose(); }
-  else if (overlayActive()) { overlayClose(); }
+  if (wifiSetupOpen) { wifiSetupClose(); } else
+  if (overlayActive()) { overlayClose(); }
   else { overlayOpen(MENU_OVERLAY); }
   Serial.println(overlayActive() ? "menu open" : "menu close");
 }
 if (hwBtnA().wasReleased) {
   if (!btnALong && !swallowBtnA) {
-    if (wifiSetupOpen) {
-      beep(1800, 30);
-      wifiSetupClose();
-    } else if (inPrompt) {
+    if (wifiSetupOpen) { beep(1800, 30); wifiSetupClose(); } else
+    if (inPrompt) {
       char cmd[96];
       snprintf(cmd, sizeof(cmd), "{\"cmd\":\"permission\",\"id\":\"%s\",\"decision\":\"once\"}", tama.promptId);
       sendCmd(cmd);
@@ -150,10 +148,8 @@ if (hwBtnA().wasReleased) {
 if (hwBtnB().wasPressed) {
   if (swallowBtnB) { swallowBtnB = false; }
   else
-  if (wifiSetupOpen) {
-    beep(1800, 30);
-    wifiSetupClose();
-  } else if (inPrompt) {
+  if (wifiSetupOpen) { beep(1800, 30); wifiSetupClose(); } else
+  if (inPrompt) {
     char cmd[96];
     snprintf(cmd, sizeof(cmd), "{\"cmd\":\"permission\",\"id\":\"%s\",\"decision\":\"deny\"}", tama.promptId);
     sendCmd(cmd);
@@ -180,7 +176,8 @@ if (hwBtnB().wasPressed) {
 // Clocking = idle home screen with RTC synced; drives gesture routing:
 // HUD (!clocking) gets tap-to-pet, clocking gets horizontal-swipe-to-switch-species.
 bool tpClocking = displayMode == DISP_NORMAL
-               && !overlayActive() && !inPrompt && !wifiSetupOpen
+               && !overlayActive() && !inPrompt
+               && !wifiSetupOpen
                && tama.sessionsRunning == 0 && tama.sessionsWaiting == 0
                && dataRtcValid();
 

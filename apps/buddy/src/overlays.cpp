@@ -177,7 +177,8 @@ static const OverlayItem SETTINGS_ITEMS[] = {
   { "reset",      nullptr,    cReset,    false },
   { "back",       nullptr,    cClose,    false },
 };
-const Overlay SETTINGS_OVERLAY = { SETTINGS_ITEMS, 12, 0, "Next", "Change" };
+const Overlay SETTINGS_OVERLAY = { SETTINGS_ITEMS,
+  (uint8_t)(sizeof(SETTINGS_ITEMS)/sizeof(SETTINGS_ITEMS[0])), 0, "Next", "Change" };
 
 // -- main menu rows --
 
@@ -200,7 +201,8 @@ static const OverlayItem MENU_ITEMS[] = {
   { "demo",     vDemo,   cDemo,     false },
   { "close",    nullptr, cClose,    false },
 };
-const Overlay MENU_OVERLAY = { MENU_ITEMS, 6, 0, "A", "B" };
+const Overlay MENU_OVERLAY = { MENU_ITEMS,
+  (uint8_t)(sizeof(MENU_ITEMS)/sizeof(MENU_ITEMS[0])), 0, "A", "B" };
 
 // -- reset rows --
 

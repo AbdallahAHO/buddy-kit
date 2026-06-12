@@ -10,7 +10,7 @@ One table row in `apps/buddy/src/overlays.cpp`:
 ```cpp
 static void vMyThing(char* b, size_t c, uint16_t* col) { snprintf(b, c, " on"); *col = GREEN; }
 static bool cMyThing(uint8_t) { /* do it */ return true; }  // true = stay open
-// add to SETTINGS_ITEMS[] (bump the Overlay count):
+// add to SETTINGS_ITEMS[] (the Overlay row count is computed):
 { "my thing", vMyThing, cMyThing, false },   // last field: arm-to-confirm
 ```
 
