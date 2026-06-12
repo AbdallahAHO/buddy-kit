@@ -19,6 +19,8 @@ lokalise/lupo-ui's `docs/decisions/`, trimmed for a solo repo.
   `superseded by NNN`.
 - Update the index below in the same commit.
 
+The `adr` skill (`.agents/skills/adr/`) walks through writing one.
+
 ## Index
 
 - [001](001-injected-link-time-contracts.md) — Libraries receive app policy through injected link-time contracts

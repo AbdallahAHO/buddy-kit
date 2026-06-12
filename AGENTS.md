@@ -68,6 +68,20 @@ build-green is not done. Two traps: opening the serial port DTR-resets the
 chip (wait ~2 s before the first command), and UI changes need the physical
 checklist in `docs/extending.md`.
 
+## Skills
+
+Reusable workflows live as skills; canonical source is
+`.agents/skills/<name>/SKILL.md` (`.claude/skills/` holds symlinks for
+Claude Code). Agents without native skill loading (Codex): before work
+matching a description below, read that SKILL.md directly.
+
+| Skill | Use when |
+|---|---|
+| `buddy-build-flash-verify` | building/flashing firmware, serial probing, panic triage, recovery |
+| `buddy-hub-dev` | running the fleet hub locally, registering a device, debugging /poll + /push |
+| `buddy-release-ota` | shipping a firmware release to the fleet over OTA, rollback |
+| `adr` | a change involves a material decision → record it in `docs/decisions/` |
+
 ## Hard-won gotchas (details in docs/hardware.md)
 
 - **Partition table is load-bearing**: dual-OTA (`ota_8mb.csv`); NVS must end
