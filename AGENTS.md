@@ -107,7 +107,8 @@ matching a description below, read that SKILL.md directly.
 - Upstream reference clone (read-only): `../esp/reference/claude-desktop-buddy-esp32/`.
 - Roadmap: M3 cloud fleet hub DONE (`cloud/`, docs/cloud.md) — verified e2e
   over `wrangler dev`; prod deploy needs device-side HTTPS (WiFiClientSecure).
-  Remaining: M2 native tests, M4 e-paper dashboard app, device HTTPS for prod.
+  Remaining: M4 e-paper dashboard app, device HTTPS for prod. (M2 native tests
+done — `pio test -e native_test`.)
 
 ## House style
 

@@ -26,8 +26,9 @@ link-time symbols (ADR 001). Buffers are fixed-size and sized explicitly
 per-byte transport pumps — never allocate; the 1 Hz HTTP poll task sits
 deliberately outside that rule (transient HTTPClient/String per pass, off
 the loop thread). `lib/agent-state` and `lib/line-bus` additionally stay
-Arduino-free so the planned native-test envs (M2) can compile them
-off-target.
+Arduino-free so the native-test env (root `platformio.ini`,
+`pio test -e native_test`) compiles them off-target — real unit tests live
+in `test/test_core/`.
 
 ## Consequences
 

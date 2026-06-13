@@ -113,6 +113,6 @@ screen can be carved into a block later.
 
 | Layer | How |
 |---|---|
-| Pure libs (line-bus, agent-state) | PlatformIO `native` env tests (M2 skeleton in `test/`) |
+| Pure libs (line-bus, agent-state) | `pio test -e native_test` — host unit tests in `test/test_core/` (CI-gated) |
 | Protocol / state | `tools/test_serial.py`, `test_xfer.py`, `test_hub.py` over USB |
 | UI / input | flash + the physical checklist: menus open/cycle/confirm, arm-confirm, page swipes, prompt approve/deny, no ghosts after closing overlays/QR/passkey |
