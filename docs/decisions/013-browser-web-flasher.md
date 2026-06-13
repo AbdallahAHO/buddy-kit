@@ -20,9 +20,13 @@ Multi-part manifest: `bootloader@0x0`, `partitions@0x8000`, `boot_app0@0xe000`,
 part at its offset and skips the gaps, so NVS (creds) and spiffs (characters)
 are preserved — web-flashing behaves like `pio upload`, honoring
 [ADR 005](005-nvs-ends-at-0xe000.md)/[006](006-dual-ota-partition-table.md).
-`new_install_prompt_erase: false`. `improv: false` — the firmware speaks our
-JSON line protocol, not Improv, so steps 3–4 (Wi-Fi + the live framebuffer via
-the [ADR 011](011-virtual-display-is-a-framebuffer-tee.md) vdp tee) use our own
+`new_install_prompt_erase: true` — counterintuitive but verified against the
+ESP Web Tools source: with `improv: false` it can't detect "same firmware", so
+`false` would *force* a full-chip erase, while `true` shows an **unchecked**
+erase box whose default (no erase) keeps NVS + spiffs; ticking it does a clean
+wipe. `improv: false` — the firmware speaks our JSON line protocol, not Improv,
+so steps 3–4 (Wi-Fi + the live framebuffer via the
+[ADR 011](011-virtual-display-is-a-framebuffer-tee.md) vdp tee) use our own
 Web Serial code, not ESP Web Tools provisioning. `tools/export_web_flasher.py`
 builds the parts + manifest; binaries are gitignored and fetched from Releases
 by the Pages workflow (dormant, per [ADR 010](010-dormant-ci-workflow.md)).
@@ -31,8 +35,8 @@ by the Pages workflow (dormant, per [ADR 010](010-dormant-ci-workflow.md)).
 
 Plug in the C6, open the page, flash, watch the pet boot — no toolchain. The
 picker is data-driven (`web/apps.json`), so a new composition appears in the
-flasher by adding an entry. Hardware-verified: the exact served bytes boot and
-preserve creds (Wi-Fi stayed joined across a full flash). Costs: a CDN dep
+flasher by adding an entry. Hardware-verified: the exact served bytes boot and, written without erase,
+preserve creds (Wi-Fi stayed joined). Costs: a CDN dep
 (ESP Web Tools, pinned), Web Serial means Chrome/Edge desktop only, and the
 merged-vs-multipart choice is load-bearing — never collapse to a merged blob
 without re-confirming the NVS gap. The how lives in `docs/flashing.md`.

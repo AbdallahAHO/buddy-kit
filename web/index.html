@@ -93,8 +93,9 @@
     </div>
     <div class="tip">
       <b>Can't connect?</b> Put the C6 in download mode — hold <b>BOOT</b>, tap <b>RESET</b>,
-      release <b>BOOT</b> — then click Connect and pick the <b>usbmodem</b> port. Flashing keeps
-      your Wi-Fi credentials and installed characters (it writes only the app, not NVS).
+      release <b>BOOT</b> — then click Connect and pick the <b>usbmodem</b> port. Leave the
+      <b>erase</b> box unchecked (the default) to keep your Wi-Fi credentials and characters;
+      tick it for a clean wipe.
     </div>
     <p class="muted" id="fwmiss" style="display:none; margin-top:12px;"></p>
   </section>
@@ -128,8 +129,9 @@
 </main>
 
 <footer>
-  buddy-kit is a lego-layered ESP32 firmware monorepo. The flasher serves merged builds
-  produced by <code>tools/export_web_flasher.py</code>; the live screen rides the
+  buddy-kit is a lego-layered ESP32 firmware monorepo. The flasher serves multi-part builds
+  (parts at their real flash offsets) produced by <code>tools/export_web_flasher.py</code>;
+  the live screen rides the
   <code>{"cmd":"vdp"}</code> framebuffer tee. Source &amp; docs in the repo.
 </footer>
 

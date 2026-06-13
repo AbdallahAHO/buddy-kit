@@ -1,6 +1,8 @@
 # Dormant until a remote exists. Tag a release (vX.Y.Z) → build the flasher
-# artifacts for every app, attach them to the GitHub Release, and deploy the
-# Pages flasher site. Mirrors the dormant-CI posture of ci.yml (ADR 010/013).
+# artifacts for every app and attach them to the GitHub Release. Publishing the
+# release triggers pages.yml, which fetches this asset and deploys the site —
+# pages.yml is the single Pages-deploy owner, so this workflow never deploys
+# (avoids a double-deploy race). Dormant-CI posture, see ADR 010/013.
 name: Release firmware
 
 on:
@@ -14,8 +16,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   release:
@@ -57,10 +57,5 @@ jobs:
               --title "$TAG" \
               --notes "buddy-kit firmware $TAG. Flash from the browser: see web/ (Pages)."
           fi
-
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: web
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      # No Pages deploy here — publishing the release above triggers pages.yml,
+      # which fetches this asset and deploys. Single owner, no double-deploy.

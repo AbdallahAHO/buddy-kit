@@ -7,6 +7,13 @@ const $ = (id) => document.getElementById(id);
 
 // ── Browser gate ──────────────────────────────────────────────────────────
 if (!("serial" in navigator)) {
+  $("gate").innerHTML = "This page needs <b>Web Serial</b> — open it in desktop " +
+    "<b>Chrome</b> or <b>Edge</b> (Safari and Firefox don't support it yet).";
+  $("gate").style.display = "block";
+} else if (!window.isSecureContext) {
+  // file:// has navigator.serial but isn't a secure context — flashing won't work.
+  $("gate").innerHTML = "Web Serial needs a secure context — serve this folder over " +
+    "<b>http://localhost</b> (<code>python3 -m http.server</code>), not a <code>file://</code> path.";
   $("gate").style.display = "block";
 }
 
@@ -50,14 +57,13 @@ async function selectApp(app, el) {
 
   // Tell the user plainly if firmware hasn't been built/published yet.
   const miss = $("fwmiss");
+  miss.textContent = `Firmware for ${app.name} isn't built yet — run ` +
+    `python3 tools/export_web_flasher.py --app ${app.id} (local), or it appears after a release.`;
   try {
-    const ok = (await fetch(app.manifest, { method: "GET", cache: "no-store" })).ok;
+    const ok = (await fetch(app.manifest, { method: "HEAD", cache: "no-store" })).ok;
     miss.style.display = ok ? "none" : "block";
-    if (!ok) throw 0;
   } catch {
     miss.style.display = "block";
-    miss.textContent = `Firmware for ${app.name} isn't here yet — run ` +
-      `python3 tools/export_web_flasher.py --app ${app.id} (local), or it appears after a release.`;
   }
 }
 
@@ -65,6 +71,7 @@ loadApps();
 
 // ── Step 3/4: our own Web Serial client (JSON lines) ─────────────────────────
 let port = null, writer = null, reader = null, rxBuf = "";
+let lastWifiState = null, polling = false;
 const cx = $("screen").getContext("2d");
 
 const log = (s) => {
@@ -105,6 +112,7 @@ function handle(line) {
   }
   if (m.ack === "status" && m.data) {
     const d = m.data, w = d.wifi || {};
+    lastWifiState = w.state;
     const wifi = w.state === "online" ? `online @ ${w.ip}` : (w.state || "?");
     $("livestat").textContent = `${d.name || "device"} · wifi ${wifi} · heap ${Math.round((d.sys?.heap || 0) / 1024)} KB`;
     $("livestat").classList.remove("muted");
@@ -115,7 +123,7 @@ function handle(line) {
 
 async function readLoop() {
   try {
-    while (port?.readable) {
+    while (port?.readable && reader) {
       const { value, done } = await reader.read();
       if (done) break;
       rxBuf += new TextDecoder().decode(value);
@@ -127,43 +135,69 @@ async function readLoop() {
       }
     }
   } catch (e) {
-    log("read stopped: " + e.message);
+    if (port) log("read stopped: " + e.message);  // errors on unplug are expected
+  } finally {
+    try { reader?.releaseLock(); } catch {}
   }
 }
 
+// Tear down the serial connection and reset the UI to a reconnectable state.
+async function cleanupSerial() {
+  polling = false;
+  try { await reader?.cancel(); } catch {}
+  try { reader?.releaseLock(); } catch {}
+  try { writer?.releaseLock(); } catch {}
+  try { await port?.close(); } catch {}
+  port = writer = reader = null; rxBuf = ""; lastWifiState = null;
+  $("devpanel").style.display = "none";
+  $("connect").disabled = false;
+  $("connect").textContent = "Connect to device";
+}
+
 $("connect").onclick = async () => {
+  if (port) return;                 // already connected — ignore repeat clicks
+  $("connect").disabled = true;
   try {
     port = await navigator.serial.requestPort();
     await port.open({ baudRate: 115200 });
+    // Register the unplug handler before the boot wait, so a yank mid-boot is caught.
+    port.addEventListener("disconnect", () => {
+      $("devstat").textContent = "device unplugged";
+      cleanupSerial();
+    });
     writer = port.writable.getWriter();
     reader = port.readable.getReader();
+    readLoop();                     // releases the reader lock in its finally
     $("devstat").textContent = "booting (the port open reset the chip)…";
-    readLoop();
     await new Promise((r) => setTimeout(r, 2500)); // DTR reset → let it boot
     $("devstat").textContent = "connected";
+    $("connect").textContent = "Connected";
     $("devpanel").style.display = "block";
     await send({ cmd: "vdp", on: true });   // start the live screen
     await send({ cmd: "status" });           // populate the status line
-    port.addEventListener("disconnect", () => {
-      $("devstat").textContent = "device unplugged";
-      $("devpanel").style.display = "none";
-      port = writer = reader = null;
-    });
   } catch (e) {
     $("devstat").textContent = "connect failed: " + e.message;
+    await cleanupSerial();
   }
 };
 
 $("wifi").onclick = async () => {
   const ssid = $("ssid").value.trim();
-  if (!ssid) return;
+  if (!ssid) { $("devstat").textContent = "enter a Wi-Fi network name first"; return; }
+  if (polling || !port) return;            // ignore re-clicks while a join is in flight
+  polling = true;
+  $("wifi").disabled = true;
+  lastWifiState = null;
   await send({ cmd: "wifi", ssid, pass: $("pass").value });
   log(`→ joining ${ssid}…`);
-  // Poll status a few times so the live line flips to "online @ ip".
-  for (let i = 0; i < 8; i++) {
+  // Poll status until the live line flips to online (or give up after ~16 s).
+  for (let i = 0; i < 8 && polling && port; i++) {
     await new Promise((r) => setTimeout(r, 2000));
     await send({ cmd: "status" });
+    if (lastWifiState === "online") break;
   }
+  polling = false;
+  $("wifi").disabled = false;
 };
 
 $("send").onclick = async () => {

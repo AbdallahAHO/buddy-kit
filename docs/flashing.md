@@ -10,10 +10,11 @@ A single static page (`web/index.html` + `flasher.js`), four steps:
 
 1. **Choose a composition** — cards built from `web/apps.json` (Buddy, Glance),
    each with a real device screenshot.
-2. **Flash** — ESP Web Tools writes the selected app. Multi-part manifest, so
-   it writes only `bootloader`/`partitions`/`boot_app0`/`firmware` and leaves
-   NVS + spiffs alone: **Wi-Fi creds and installed characters survive a flash**
-   (same as `pio upload`).
+2. **Flash** — ESP Web Tools writes the selected app. Leave its **erase**
+   checkbox unchecked (the default): the multi-part manifest writes
+   `bootloader`/`partitions`/`boot_app0`/`firmware` at their offsets and leaves
+   NVS + spiffs alone, so **Wi-Fi creds and characters survive a flash** (like
+   `pio upload`). Tick erase for a clean wipe.
 3. **Connect & set Wi-Fi** — our own Web Serial client sends
    `{"cmd":"wifi",...}` and polls `{"cmd":"status"}`.
 4. **See it live** — `{"cmd":"vdp","on":true}` streams the real framebuffer
@@ -33,7 +34,7 @@ cd web && python3 -m http.server 8123          # Web Serial works on localhost
 `export_web_flasher.py` runs `pio run` for each app, copies the four flash
 parts into `web/firmware/<app>/`, and writes the ESP Web Tools `manifest.json`.
 Add `--skip-build` to reuse existing `.pio` output, `--app buddy|glance` to
-limit, `--version vX` to stamp the manifest. The C6 offsets it merges around
+limit, `--version vX` to stamp the manifest. The C6 offsets it writes to
 (`0x0 / 0x8000 / 0xe000 / 0x10000`) are load-bearing — see hardware.md.
 
 ## Publishing (when a remote exists)
@@ -42,8 +43,9 @@ Binaries are never committed (`web/firmware/` is gitignored). The dormant
 workflows activate on first push:
 
 - **`release.yml`** — tag `vX.Y.Z` → builds all apps → uploads
-  `web-firmware.tar.gz` to the GitHub Release → deploys Pages.
-- **`pages.yml`** — pushes to `main` → pulls the latest release's firmware
-  (`fetch_release_firmware.py`) → redeploys Pages.
+  `web-firmware.tar.gz` to the GitHub Release (it does *not* deploy Pages).
+- **`pages.yml`** — the single Pages deployer: on the release publish **and** on
+  pushes to `main`, it pulls the latest release's firmware
+  (`fetch_release_firmware.py`) and deploys. One owner, no double-deploy.
 
 The flasher then lives at `https://<owner>.github.io/<repo>/`.

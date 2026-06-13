@@ -106,6 +106,8 @@ def export_app(app: str, version: str, skip_build: bool) -> dict:
     placed.sort(key=lambda p: p[0])
     for i, (offset, name, size) in enumerate(placed):
         ceiling = placed[i + 1][0] if i + 1 < len(placed) else offset + size
+        if name == "partitions.bin":
+            ceiling = 0x9000  # must not grow into the NVS region (0x9000-0xe000)
         if name == "firmware.bin":
             ceiling = offset + OTA_SLOT_SIZE  # firmware fills its own slot
         if offset + size > ceiling:
@@ -119,8 +121,13 @@ def export_app(app: str, version: str, skip_build: bool) -> dict:
     manifest = {
         "name": spec["display"],
         "version": version,
-        # Keep NVS + spiffs: write our parts only, no full-chip erase.
-        "new_install_prompt_erase": False,
+        # ESP Web Tools inverts intuition (verified against its install-dialog
+        # source): with improv:false a fresh install ERASES the whole chip when
+        # this is false. Setting it true shows an *optional* erase checkbox,
+        # unchecked by default → no erase → our parts are written at their
+        # offsets and NVS (creds) + spiffs (characters) survive, like
+        # `pio upload`. The user can tick the box for a clean wipe. See ADR 013.
+        "new_install_prompt_erase": True,
         "builds": [{
             "chipFamily": CHIP_FAMILY,
             "improv": False,  # firmware speaks our JSON line protocol, not Improv

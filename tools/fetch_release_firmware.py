@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import io
+import json
 import os
 import tarfile
 import urllib.error
@@ -47,7 +48,6 @@ def main() -> int:
     if not args.repo:
         raise SystemExit("Pass --repo owner/name (or set GITHUB_REPOSITORY).")
 
-    import json
     release = json.loads(get(f"https://api.github.com/repos/{args.repo}/releases/latest"))
     tag = release.get("tag_name", "?")
     asset = next((a for a in release.get("assets", []) if a.get("name") == ASSET), None)
@@ -57,7 +57,7 @@ def main() -> int:
     print(f"Fetching {ASSET} from {tag}")
     blob = get(asset["browser_download_url"])
     with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tar:
-        tar.extractall(WEB)  # archive root is firmware/
+        tar.extractall(WEB, filter="data")  # archive root is firmware/; filter blocks path traversal
     print(f"web/firmware populated from release {tag}")
     return 0
 
