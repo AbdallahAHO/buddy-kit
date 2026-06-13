@@ -1,5 +1,9 @@
 # buddy-kit
 
+[![CI](https://github.com/AbdallahAHO/buddy-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdallahAHO/buddy-kit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Flash from your browser](https://img.shields.io/badge/flash-from%20your%20browser-3ddc6b)](https://abdallahaho.github.io/buddy-kit/)
+
 A lego-layered monorepo for ESP32 companion devices, extracted from
 [claude-desktop-buddy-esp32](https://github.com/vthinkxie/claude-desktop-buddy-esp32)
 (MIT, itself a port of anthropics/claude-desktop-buddy). The buddy app is the
@@ -109,7 +113,8 @@ device answer over the air.
 
 ## Roadmap
 
-- M2: native-env tests for line-bus framing/dispatch and agent-state
+- M2: native-env unit tests — **done** (`test/test_core/`, `pio test -e native_test`);
+  agent-state persona selector + line-bus framing + snapshot apply
 - M3: cloud fleet hub — **done** (`cloud/`, [docs/cloud.md](docs/cloud.md));
   verified e2e over `wrangler dev`. Production deploy needs the device-side
   HTTPS change (WiFiClientSecure in transport-http + lib/ota)

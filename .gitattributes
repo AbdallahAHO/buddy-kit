@@ -1,0 +1,8 @@
+# Normalize line endings to LF; let git auto-detect text vs binary.
+* text=auto eol=lf
+
+# Firmware images and assets are binary (never line-ending munged or diffed).
+*.bin binary
+*.png binary
+*.ico binary
+*.gif binary
