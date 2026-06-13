@@ -1,10 +1,17 @@
-# Dormant until a remote exists — runs on the first push to GitHub.
+# Build matrix (all board envs) + cloud typecheck + native unit tests.
+# Docs-only pushes are skipped; a newer push cancels an in-flight run.
 name: ci
 
 on:
   push:
     branches: [main]
+    paths-ignore: ['**/*.md', 'docs/**']
   pull_request:
+    paths-ignore: ['**/*.md', 'docs/**']
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   firmware:
