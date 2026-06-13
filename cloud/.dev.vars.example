@@ -1,0 +1,8 @@
+# Local-dev secrets for `wrangler dev`. Copy this file to `.dev.vars` (gitignored)
+# and keep the dev values, or set your own. In production these are NOT used —
+# set them with `wrangler secret put DEVICE_KEY` / `ADMIN_KEY` instead.
+DEVICE_KEY = "dev-fleet-key"
+ADMIN_KEY = "dev-admin-key"
+# The LAN address devices use to reach this machine in dev (devices can't reach
+# localhost). In prod this is your workers.dev / custom-domain https URL.
+PUBLIC_URL = "http://192.168.4.1:8787"

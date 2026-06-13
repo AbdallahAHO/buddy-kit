@@ -29,11 +29,13 @@ cloud/
 - **Device** → `Bearer DEVICE_KEY` (shared fleet key) on `/poll` and `/push`.
   Firmware download (`/fw/:version`) is `?t=DEVICE_KEY` instead of a header,
   so the device's plain-GET OTA pull needs no auth code.
-- **Admin** → `Bearer ADMIN_KEY` (or `?k=` for the dashboard) on `/v1/*`.
+- **Admin** → `Bearer ADMIN_KEY` (Authorization header only) on `/v1/*`. The
+  dashboard prompts for the key once and keeps it in `localStorage`.
 
 Per-device token issuance (rotate/revoke one device) is the obvious next
-hardening step; v1 uses one fleet key for simplicity. Set both as secrets in
-production: `wrangler secret put DEVICE_KEY` / `ADMIN_KEY`.
+hardening step; v1 uses one fleet key for simplicity. Keys are never
+committed: local dev reads `cloud/.dev.vars` (copy from `.dev.vars.example`),
+production uses `wrangler secret put DEVICE_KEY` / `ADMIN_KEY`.
 
 ## Routes
 

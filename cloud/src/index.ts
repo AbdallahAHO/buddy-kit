@@ -31,9 +31,9 @@ const deviceAuth = async (c: any, next: any) => {
   await next();
 };
 const adminAuth = async (c: any, next: any) => {
-  // Admin key from Bearer header or ?k= (dashboard convenience).
-  const k = bearer(c) ?? c.req.query("k");
-  if (k !== c.env.ADMIN_KEY) return c.text("unauthorized", 401);
+  // Admin key from the Authorization header only — never a query string
+  // (?k= would leak the admin key into logs, history, and referrers).
+  if (bearer(c) !== c.env.ADMIN_KEY) return c.text("unauthorized", 401);
   await next();
 };
 

@@ -21,13 +21,8 @@
     { "binding": "FW", "bucket_name": "buddy-firmware" }
   ],
 
-  // Local-dev defaults. In production set these as secrets:
-  //   wrangler secret put DEVICE_KEY ; wrangler secret put ADMIN_KEY
-  "vars": {
-    "DEVICE_KEY": "dev-fleet-key",
-    "ADMIN_KEY": "dev-admin-key",
-    // Dev-only: the LAN address devices use to reach this machine. In prod
-    // this is your workers.dev / custom-domain URL (https).
-    "PUBLIC_URL": "http://192.168.2.187:8787"
-  }
+  // DEVICE_KEY / ADMIN_KEY / PUBLIC_URL are NOT committed (auth keys must not
+  // live in the repo). Local dev: copy .dev.vars.example → .dev.vars (gitignored).
+  // Production: `wrangler secret put DEVICE_KEY` + `ADMIN_KEY`, and set
+  // PUBLIC_URL (var or secret) to the deployed https origin.
 }
