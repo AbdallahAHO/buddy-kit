@@ -10,6 +10,20 @@ first composition; the layers are reusable for any desktop-to-gadget bridge
 tree, data flow, input, protocol, connectivity, hardware, extending recipes.
 Contribution rules (incl. the docs-stay-true contract): [AGENTS.md](AGENTS.md).
 
+## Flash it from your browser
+
+No toolchain needed — a static page flashes the C6 over Web Serial, then sets
+Wi-Fi and shows the device's live screen. Locally:
+
+```bash
+python3 tools/export_web_flasher.py     # build + assemble web/firmware/<app>/
+cd web && python3 -m http.server 8123   # open http://localhost:8123 in Chrome/Edge
+```
+
+Pick a composition (Buddy or Glance), Connect, flash. Flashing preserves Wi-Fi
+creds + characters (it writes only the app, not NVS). Full guide, including
+publishing to GitHub Pages: [docs/flashing.md](docs/flashing.md).
+
 ## Layers
 
 ```

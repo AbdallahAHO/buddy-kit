@@ -1,0 +1,47 @@
+# Dormant until a remote exists + Pages is enabled. Rebuilds the flasher site
+# on pushes to main (site/docs changes), pulling firmware from the latest
+# Release so binaries never live in git. New firmware ships via release.yml.
+name: Deploy flasher site
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", ".github/workflows/pages.yml"]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Pull firmware from the latest release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        # Soft-fail before the first release exists: the site still deploys,
+        # the install buttons just report "firmware not found" until a release.
+        run: python3 tools/fetch_release_firmware.py --repo "${{ github.repository }}" || echo "no release yet"
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4

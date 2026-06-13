@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>buddy-kit · flash from your browser</title>
+<!-- ESP Web Tools owns the flash step (connect, erase, write, verify, errors).
+     Steps 3-4 use our own Web Serial code to talk the JSON line protocol. -->
+<script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js"></script>
+<style>
+  :root {
+    --bg:#0a0d0a; --panel:#111611; --line:#243024; --ink:#cfe8cf;
+    --dim:#6f836f; --green:#3ddc6b; --red:#ff5d5d; --accent:#3ddc6b;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.6 ui-monospace,"SF Mono",Menlo,monospace;
+    padding:32px 18px 80px; display:flex; flex-direction:column; align-items:center;
+  }
+  a { color:var(--green); }
+  header { text-align:center; margin-bottom:8px; }
+  h1 { font-size:30px; margin:0; letter-spacing:1px; }
+  h1 .k { color:var(--green); }
+  .tag { color:var(--dim); margin:6px 0 0; }
+  main { width:100%; max-width:760px; }
+  .step { background:var(--panel); border:1px solid var(--line); border-radius:14px;
+          padding:20px 22px; margin:18px 0; }
+  .step[aria-disabled="true"] { opacity:.45; pointer-events:none; }
+  .step h2 { font-size:15px; margin:0 0 14px; color:var(--dim); font-weight:600;
+             text-transform:uppercase; letter-spacing:1.5px; }
+  .step h2 .n { display:inline-grid; place-items:center; width:22px; height:22px;
+                border:1px solid var(--green); color:var(--green); border-radius:50%;
+                font-size:12px; margin-right:9px; }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:560px){ .cards{ grid-template-columns:1fr; } }
+  .card { text-align:left; background:#0c110c; border:1px solid var(--line);
+          border-radius:12px; padding:14px; cursor:pointer; transition:border-color .15s; }
+  .card:hover { border-color:var(--dim); }
+  .card[aria-selected="true"] { border-color:var(--green); box-shadow:0 0 0 1px var(--green) inset; }
+  .card img { width:100%; aspect-ratio:184/224; object-fit:contain; background:#000;
+              border-radius:8px; image-rendering:pixelated; max-height:200px; }
+  .card .name { font-size:17px; margin:10px 0 2px; color:var(--ink); }
+  .card .tagline { color:var(--green); font-size:13px; }
+  .card .blurb { color:var(--dim); font-size:13px; margin-top:6px; }
+  .tip { background:#0c110c; border-left:3px solid var(--green); border-radius:0 8px 8px 0;
+         padding:10px 14px; margin:14px 0 0; color:var(--dim); font-size:13px; }
+  .tip b { color:var(--ink); }
+  button.act, input, .selapp { font:inherit; }
+  button.act { background:#14211a; color:var(--green); border:1px solid var(--green);
+               border-radius:8px; padding:9px 16px; cursor:pointer; }
+  button.act:hover { background:#1b2e22; }
+  button.act:disabled { color:var(--dim); border-color:var(--line); cursor:default; background:none; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+  input { background:#0c110c; border:1px solid var(--line); border-radius:8px;
+          color:var(--ink); padding:8px 11px; }
+  input::placeholder { color:#4a5a4a; }
+  #screen { image-rendering:pixelated; background:#000; border:1px solid var(--line);
+            border-radius:12px; width:276px; height:336px; }
+  .live { display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; margin-top:14px; }
+  .statline { color:var(--green); min-height:1.4em; font-size:13px; }
+  .muted { color:var(--dim); }
+  #log { width:100%; height:120px; overflow-y:auto; background:#0c110c; border:1px solid var(--line);
+         border-radius:8px; padding:8px 10px; margin-top:12px; font-size:12px; color:#7fb78f;
+         white-space:pre-wrap; word-break:break-all; }
+  .gate { background:#2a1414; border:1px solid var(--red); color:#ffb0b0;
+          border-radius:12px; padding:14px 18px; margin:18px 0; display:none; }
+  footer { color:var(--dim); font-size:12px; margin-top:34px; text-align:center; max-width:680px; }
+  .selapp { color:var(--green); }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="k">buddy</span>-kit</h1>
+  <p class="tag">Flash an ESP32-C6 from your browser. No toolchain, no IDE.</p>
+</header>
+
+<main>
+  <div class="gate" id="gate">
+    This page needs <b>Web Serial</b> — open it in desktop <b>Chrome</b> or <b>Edge</b>
+    (Safari and Firefox don't support it yet).
+  </div>
+
+  <section class="step" id="step1">
+    <h2><span class="n">1</span> Choose a composition</h2>
+    <div class="cards" id="cards"><p class="muted">Loading compositions…</p></div>
+  </section>
+
+  <section class="step" id="step2" aria-disabled="true">
+    <h2><span class="n">2</span> Flash <span class="selapp" id="sel2"></span></h2>
+    <div id="installSlot">
+      <esp-web-install-button id="install"></esp-web-install-button>
+    </div>
+    <div class="tip">
+      <b>Can't connect?</b> Put the C6 in download mode — hold <b>BOOT</b>, tap <b>RESET</b>,
+      release <b>BOOT</b> — then click Connect and pick the <b>usbmodem</b> port. Flashing keeps
+      your Wi-Fi credentials and installed characters (it writes only the app, not NVS).
+    </div>
+    <p class="muted" id="fwmiss" style="display:none; margin-top:12px;"></p>
+  </section>
+
+  <section class="step" id="step3" aria-disabled="true">
+    <h2><span class="n">3</span> Connect &amp; bring it to life</h2>
+    <div class="row">
+      <button class="act" id="connect">Connect to device</button>
+      <span class="statline" id="devstat"></span>
+    </div>
+
+    <div id="devpanel" style="display:none;">
+      <div class="row" style="margin-top:16px;">
+        <input id="ssid" placeholder="Wi-Fi network" autocomplete="off">
+        <input id="pass" type="password" placeholder="password" autocomplete="off">
+        <button class="act" id="wifi">Set Wi-Fi</button>
+      </div>
+      <div class="live">
+        <canvas id="screen" width="184" height="224"></canvas>
+        <div style="flex:1; min-width:220px;">
+          <div class="statline muted" id="livestat">live screen — the real framebuffer, streamed</div>
+          <div class="row">
+            <input id="cmd" placeholder='{"cmd":"status"}' style="flex:1;">
+            <button class="act" id="send">Send</button>
+          </div>
+          <div id="log"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  buddy-kit is a lego-layered ESP32 firmware monorepo. The flasher serves merged builds
+  produced by <code>tools/export_web_flasher.py</code>; the live screen rides the
+  <code>{"cmd":"vdp"}</code> framebuffer tee. Source &amp; docs in the repo.
+</footer>
+
+<script src="flasher.js"></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+# Dormant until a remote exists. Tag a release (vX.Y.Z) → build the flasher
+# artifacts for every app, attach them to the GitHub Release, and deploy the
+# Pages flasher site. Mirrors the dormant-CI posture of ci.yml (ADR 010/013).
+name: Release firmware
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release tag to build, e.g. v0.4.0"
+        required: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install platformio
+
+      - name: Build flasher artifacts (all apps)
+        run: python3 tools/export_web_flasher.py --version "${{ steps.version.outputs.value }}"
+
+      - name: Package the firmware tree
+        run: tar -czf web-firmware.tar.gz -C web firmware
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.value }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" web-firmware.tar.gz --clobber
+          else
+            gh release create "$TAG" web-firmware.tar.gz \
+              --title "$TAG" \
+              --notes "buddy-kit firmware $TAG. Flash from the browser: see web/ (Pages)."
+          fi
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4

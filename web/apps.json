@@ -1,0 +1,22 @@
+{
+  "board": "Waveshare ESP32-C6 Touch AMOLED 2.16\"",
+  "chipFamily": "ESP32-C6",
+  "apps": [
+    {
+      "id": "buddy",
+      "name": "Buddy",
+      "tagline": "A desktop companion pet for Claude.",
+      "blurb": "BLE + Wi-Fi companion: ASCII or GIF characters, approval prompts, jiggler, the full feature set. The reference composition.",
+      "screenshot": "img/buddy.png",
+      "manifest": "firmware/buddy/manifest.json"
+    },
+    {
+      "id": "glance",
+      "name": "Glance",
+      "tagline": "A hub-fed fleet status panel.",
+      "blurb": "Minimal second composition: no BLE, no faces — just Wi-Fi, the cloud hub, and one always-on status screen. Boots lighter (~200 KB free heap).",
+      "screenshot": "img/glance.png",
+      "manifest": "firmware/glance/manifest.json"
+    }
+  ]
+}

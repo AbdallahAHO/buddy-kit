@@ -46,6 +46,7 @@ commit:**
 | boards, partition table, NVS keys, USB/display quirks, memory | `docs/hardware.md` |
 | anything that changes a recipe | `docs/extending.md` |
 | repo layout / quickstart | `README.md` |
+| web flasher, export tool, install/distribution flow | `docs/flashing.md` |
 | **material decision** — new dep, layer contract, memory/partition layout, protocol shape, infra choice | ADR in `docs/decisions/`, same commit |
 
 ADR lifecycle: `approved` at commit time; never edit an approved ADR —

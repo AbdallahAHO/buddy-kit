@@ -14,6 +14,7 @@ Reading order if you're new:
 | [cloud.md](cloud.md) | The Cloudflare Worker: fleet hub, device registry, firmware storage, broadcast OTA, dashboard |
 | [hardware.md](hardware.md) | Boards, HAL pattern, partition table (and why it's shaped that way), USB quirks, flash/recovery |
 | [extending.md](extending.md) | Recipes: add a screen, a menu row, a transport, a face, a board, an app |
+| [flashing.md](flashing.md) | The browser web flasher: ESP Web Tools, the export tool, local run, publishing |
 | [decisions/](decisions/README.md) | Architecture decision records — the *why* behind every material choice |
 
 Rules for keeping these honest are in the repo-root [AGENTS.md](../AGENTS.md):

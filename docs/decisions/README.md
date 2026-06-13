@@ -35,3 +35,4 @@ The `adr` skill (`.agents/skills/adr/`) walks through writing one.
 - [010](010-dormant-ci-workflow.md) — CI is a dormant GitHub Actions workflow: pio build matrix + cloud typecheck
 - [011](011-virtual-display-is-a-framebuffer-tee.md) — The virtual display is a framebuffer tee, not a second renderer
 - [012](012-blocks-are-source-you-own.md) — Blocks are app source you copy in, not a library you depend on
+- [013](013-browser-web-flasher.md) — Distribute via a browser web flasher (ESP Web Tools), binaries in Releases not git
