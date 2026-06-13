@@ -39,6 +39,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # On manual dispatch, build the requested tag — not the default branch
+          # — so a rerun can't clobber vX.Y.Z's assets with later commits.
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref }}
 
       - id: version
         run: |

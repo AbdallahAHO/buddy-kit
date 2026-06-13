@@ -18,7 +18,9 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # Serialize with release.yml (same group) instead of cancelling — a web push
+  # must never interrupt an in-flight release deploy.
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -35,9 +37,10 @@ jobs:
       - name: Pull firmware from the latest release
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        # Soft-fail before the first release exists: the site still deploys,
-        # the install buttons just report "firmware not found" until a release.
-        run: python3 tools/fetch_release_firmware.py --repo "${{ github.repository }}" || echo "no release yet"
+        # The script soft-exits 0 when no release exists yet (site deploys
+        # firmware-less) and fails hard on real errors (rate-limit, outage,
+        # corrupt asset) so we never deploy a broken flasher silently.
+        run: python3 tools/fetch_release_firmware.py --repo "${{ github.repository }}"
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
