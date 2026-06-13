@@ -49,4 +49,10 @@ workflows activate on first push:
   (`fetch_release_firmware.py`). release.yml owns release deploys; a
   `GITHUB_TOKEN`-created release can't trigger `pages.yml`, so they never collide.
 
+One repo setting (outside git) is required because release.yml deploys Pages
+from the **tag** ref: the `github-pages` environment must permit it —
+Settings → Environments → github-pages → Deployment branch policy → add a
+`v*` **tag** rule (alongside `main`). Without it the release job is rejected
+at the environment gate before any step runs.
+
 The flasher then lives at `https://<owner>.github.io/<repo>/`.
