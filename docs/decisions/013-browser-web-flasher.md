@@ -40,3 +40,12 @@ preserve creds (Wi-Fi stayed joined). Costs: a CDN dep
 (ESP Web Tools, pinned), Web Serial means Chrome/Edge desktop only, and the
 merged-vs-multipart choice is load-bearing — never collapse to a merged blob
 without re-confirming the NVS gap. The how lives in `docs/flashing.md`.
+
+## Errata (2026-06-13)
+
+Deploy ownership corrected after the first real release: a `GITHUB_TOKEN`-
+created release does **not** emit a `release:published` event, so the planned
+"pages.yml fetches on release" hand-off never fires. **release.yml now
+self-deploys** Pages with the firmware it built; pages.yml owns push-to-main
++ manual redeploys. This also requires the `github-pages` environment to permit
+`v*` tag deploys (a repo setting). Details in `docs/flashing.md`.

@@ -36,3 +36,12 @@ build/verify loop in `AGENTS.md`) — CI proves compile, never behavior.
 ## Related
 
 - [009](009-agents-md-adrs-skills.md) — the scaffold this completes.
+
+## Errata (2026-06-13)
+
+CI is no longer dormant — the repo went public and the workflow activated on
+the first push. Since this ADR: the firmware matrix grew to **5 builds**
+(buddy × 4 envs + glance × 1), the commented `native-tests` stanza is now a
+**real job** (`pio test -e native_test`, see ADR 002), and ci.yml gained a
+`concurrency` group + docs-only `paths-ignore`. The dormant *posture* this
+ADR chose is unchanged; these are its fulfilment.
