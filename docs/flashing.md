@@ -55,4 +55,17 @@ Settings → Environments → github-pages → Deployment branch policy → add 
 `v*` **tag** rule (alongside `main`). Without it the release job is rejected
 at the environment gate before any step runs.
 
+**Verify after a release.** GitHub Pages occasionally records a deploy as
+`success`/active while the previous artifact stays served (seen when a tag
+deploy lands close after a `main` deploy). Confirm the live version actually
+flipped — fetch a rarely-cached path so you hit the origin, not an edge cache:
+
+```bash
+curl -s https://<owner>.github.io/<repo>/firmware/buddy/ota.bin | strings | grep -m1 'v0\.'
+```
+
+If it still shows the old version after ~10 min, re-run **pages.yml** (Actions →
+Deploy flasher site → Run workflow) — a clean, uncontended deploy republishes
+the latest release's firmware reliably.
+
 The flasher then lives at `https://<owner>.github.io/<repo>/`.
