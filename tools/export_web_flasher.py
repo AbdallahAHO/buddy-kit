@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -84,8 +85,14 @@ def export_app(app: str, version: str, skip_build: bool) -> dict:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if not skip_build:
-        print(f"+ pio run -d {spec['dir']} -e {ENV}")
-        subprocess.run([pio(), "run", "-d", str(app_dir), "-e", ENV], check=True)
+        # Stamp the firmware's reported version (X-Fw / dashboard) with the
+        # release version, so it matches the manifest. The apps don't hardcode
+        # BUDDY_FW_VERSION — their #ifndef fallback is "dev" for local builds;
+        # this injects the real version only when exporting a release.
+        build = os.environ.copy()
+        build["PLATFORMIO_BUILD_FLAGS"] = f'-DBUDDY_FW_VERSION=\\"{version}\\"'
+        print(f"+ pio run -d {spec['dir']} -e {ENV}  (BUDDY_FW_VERSION={version})")
+        subprocess.run([pio(), "run", "-d", str(app_dir), "-e", ENV], check=True, env=build)
 
     # Resolve each part's source, copy it into web/firmware/<app>/, validate fit.
     sources = {
