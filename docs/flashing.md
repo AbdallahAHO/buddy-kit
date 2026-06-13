@@ -42,10 +42,11 @@ limit, `--version vX` to stamp the manifest. The C6 offsets it writes to
 Binaries are never committed (`web/firmware/` is gitignored). The dormant
 workflows activate on first push:
 
-- **`release.yml`** — tag `vX.Y.Z` → builds all apps → uploads
-  `web-firmware.tar.gz` to the GitHub Release (it does *not* deploy Pages).
-- **`pages.yml`** — the single Pages deployer: on the release publish **and** on
-  pushes to `main`, it pulls the latest release's firmware
-  (`fetch_release_firmware.py`) and deploys. One owner, no double-deploy.
+- **`release.yml`** — tag `vX.Y.Z` → builds all apps → attaches
+  `web-firmware.tar.gz` to the Release → deploys Pages with that firmware.
+- **`pages.yml`** — redeploys on pushes to `main` that touch `web/`, and on
+  manual dispatch, pulling the latest release's firmware
+  (`fetch_release_firmware.py`). release.yml owns release deploys; a
+  `GITHUB_TOKEN`-created release can't trigger `pages.yml`, so they never collide.
 
 The flasher then lives at `https://<owner>.github.io/<repo>/`.

@@ -1,14 +1,14 @@
-# Dormant until a remote exists + Pages is enabled. Rebuilds the flasher site
-# on pushes to main (site/docs changes), pulling firmware from the latest
-# Release so binaries never live in git. New firmware ships via release.yml.
+# Rebuilds the flasher site on pushes to main that touch web/ (site/docs
+# changes), pulling firmware from the latest Release so binaries never live in
+# git. New firmware deploys are owned by release.yml (a GITHUB_TOKEN-created
+# release can't trigger a `release:` event here, so there's no hand-off and no
+# collision). Use the Run workflow button for a manual redeploy.
 name: Deploy flasher site
 
 on:
   push:
     branches: [main]
     paths: ["web/**", ".github/workflows/pages.yml"]
-  release:
-    types: [published]
   workflow_dispatch:
 
 permissions:

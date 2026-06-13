@@ -1,8 +1,10 @@
-# Dormant until a remote exists. Tag a release (vX.Y.Z) → build the flasher
-# artifacts for every app and attach them to the GitHub Release. Publishing the
-# release triggers pages.yml, which fetches this asset and deploys the site —
-# pages.yml is the single Pages-deploy owner, so this workflow never deploys
-# (avoids a double-deploy race). Dormant-CI posture, see ADR 010/013.
+# Tag a release (vX.Y.Z) → build the flasher artifacts for every app, attach
+# them to the GitHub Release, and deploy the Pages site (with the fresh
+# firmware in place). This workflow deploys directly rather than handing off to
+# pages.yml: a release created by the default GITHUB_TOKEN does NOT emit a
+# `release: published` event (GitHub's anti-recursion rule), so a hand-off
+# trigger would never fire — learned the hard way on the first real release.
+# pages.yml owns push-to-main + manual deploys; the two never collide. See ADR 010/013.
 name: Release firmware
 
 on:
@@ -16,11 +18,20 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -57,5 +68,11 @@ jobs:
               --title "$TAG" \
               --notes "buddy-kit firmware $TAG. Flash from the browser: see web/ (Pages)."
           fi
-      # No Pages deploy here — publishing the release above triggers pages.yml,
-      # which fetches this asset and deploys. Single owner, no double-deploy.
+
+      # Deploy the site with the firmware just built into web/firmware/.
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4
