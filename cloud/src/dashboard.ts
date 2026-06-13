@@ -34,16 +34,20 @@ const K=()=>localStorage.getItem('bk')||'';
 function setKey(){const k=prompt('admin key');if(k)localStorage.setItem('bk',k);load();}
 const hdr=()=>({Authorization:'Bearer '+K()});
 const ago=t=>{if(!t)return '—';const s=(Date.now()-t)/1000;return s<60?Math.round(s)+'s':s<3600?Math.round(s/60)+'m':Math.round(s/3600)+'h';};
+// Device-supplied fields (id/model/fw/ip come from headers an authed device sets)
+// must be escaped before going into innerHTML — otherwise a compromised device
+// could XSS the admin and steal the admin key from localStorage.
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function load(){
   const m=document.getElementById('msg');m.textContent='';
   try{
     const d=await(await fetch('/v1/devices',{headers:hdr()})).json();
     document.getElementById('rows').innerHTML=(d.devices||[]).map(x=>{
       const online=x.last_seen&&Date.now()-x.last_seen<20000;
-      return '<tr><td><span class="dot '+(online?'on':'off')+'"></span>'+x.id+
-        '</td><td>'+(x.model||'—')+'</td><td class=mono>'+(x.fw_version||'—')+
-        '</td><td>'+ago(x.last_seen)+'</td><td class=mono>'+(x.last_ip||'—')+
-        '</td><td><button class=ghost onclick="reboot(\\''+x.id+'\\')">reboot</button></td></tr>';
+      return '<tr><td><span class="dot '+(online?'on':'off')+'"></span>'+esc(x.id)+
+        '</td><td>'+esc(x.model||'—')+'</td><td class=mono>'+esc(x.fw_version||'—')+
+        '</td><td>'+ago(x.last_seen)+'</td><td class=mono>'+esc(x.last_ip||'—')+
+        '</td><td><button class=ghost data-id="'+esc(x.id)+'" onclick="reboot(this.dataset.id)">reboot</button></td></tr>';
     }).join('')||'<tr><td colspan=6 style=color:#666>no devices yet</td></tr>';
     const f=await(await fetch('/v1/firmware',{headers:hdr()})).json();
     document.getElementById('fw').innerHTML=(f.firmware||[]).map(v=>'<option>'+v.version+'</option>').join('')||'<option disabled>no firmware</option>';
@@ -56,7 +60,7 @@ async function broadcast(){
   document.getElementById('msg').textContent='queued OTA '+version+' to '+r.queued+' device(s)';
 }
 async function reboot(id){
-  await fetch('/v1/devices/'+id+'/cmd',{method:'POST',headers:hdr(),body:JSON.stringify({cmd:'reboot'})});
+  await fetch('/v1/devices/'+encodeURIComponent(id)+'/cmd',{method:'POST',headers:hdr(),body:JSON.stringify({cmd:'reboot'})});
   document.getElementById('msg').textContent='reboot queued for '+id;
 }
 load();setInterval(load,5000);
