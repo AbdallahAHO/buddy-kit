@@ -29,6 +29,8 @@ jobs:
         include:
           - app: glance
             env: waveshare-esp32c6-touch-amoled-2-16
+          - app: glance
+            env: spotpear-esp32s3-muma-1-54
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
