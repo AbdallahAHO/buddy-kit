@@ -1,0 +1,6 @@
+{
+  "name": "buddy-improv-serial",
+  "version": "0.1.0",
+  "description": "Improv Serial v1 (improv-wifi.com/serial): byte parser that coexists with line-JSON on one port, RPC decode, state/error/result encoders. Pure C++, no deps, native-testable.",
+  "license": "MIT"
+}

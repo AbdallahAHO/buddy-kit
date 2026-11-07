@@ -1,0 +1,9 @@
+{
+  "name": "buddy-notify-pair",
+  "version": "0.1.0",
+  "description": "notify v1 device-code pairing state machine: base URL derivation, pair/poll response handling, code formatting. Pure C++, native-testable; the app runs the HTTP.",
+  "license": "MIT",
+  "dependencies": [
+    { "owner": "bblanchon", "name": "ArduinoJson", "version": "^7.0.0" }
+  ]
+}
