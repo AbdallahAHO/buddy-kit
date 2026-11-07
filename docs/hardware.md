@@ -78,7 +78,33 @@ silently breaks the other — change them in both or not at all.
   is lost while the single core erases. BLE transfers are unaffected.
   `test_xfer.py` notes this; check `file_end`'s `n` before assuming loss.
 - **Opening the serial port DTR-resets the chip.** Wait ~2 s before the
-  first command (the test tools do).
+  first command (the test tools do). Not on the Muma (S3): three opens left
+  its uptime running.
+
+## USB output nobody is reading is lost (HWCDC, S3 + C6) — field-verified
+
+arduino-esp32 3.1.3's HWCDC (`cores/esp32/HWCDC.cpp:418-490`) waits
+`tx_timeout_ms` (100 ms) for the host to drain a write, then marks itself
+disconnected and parks later output in the 256-byte TX ring, dropping the
+oldest bytes. Consequences, measured on the Muma 2026-11-07:
+
+- Lines written while **no process has the port open** are gone (a `wifi`
+  ack written between one process closing and the next opening never
+  arrived). Open the port, and keep it open, *before* sending a command
+  whose reply comes later (notify `answered`, pairing, Improv provisioning).
+- A reader that **stays open** gets async output with no host writes: a
+  `[notify] 1 expired` log arrived 60 s after the last host write.
+- The cost to the loop is one 100 ms stall per port-closed period (later
+  writes take the non-blocking path). Don't "fix" it with
+  `Serial.setTxTimeoutMs(0)`: the same timeout gates the ring send and
+  `tx_lock`, so every line larger than the free ring space (status ack, vdp
+  stripes, Improv results) would truncate, and writes racing another task's
+  log would drop.
+- Never flash while a reader holds the port, and check
+  `lsof /dev/cu.usbmodem*` first: a Muma upload cut off at ~24 s left both
+  app slots erased (boot loop, "No bootable app partitions"); recovery is a
+  plain re-upload, the ROM bootloader still answers. Details in
+  `../esp/boards/xiaozhi-s3-muma-1.54/CLAUDE.md`.
 
 ## Spotpear Muma 1.54" (non-Waveshare board)
 

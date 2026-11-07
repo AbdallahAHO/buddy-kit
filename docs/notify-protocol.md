@@ -62,3 +62,47 @@ transport appends `\n` before feeding its line framer, so frames flow through th
 
 delivery: `queued → delivered → seen → answered | dismissed | retracted | expired | failed`. An ask is answered by the
 first final ack from any of its destinations; the others get `retract` with `reason:"answered"`.
+
+## As built (firmware and server, v1)
+
+Behaviour both sides settled on while implementing v1; the frames above are unchanged.
+
+- **Inbox of 4.** The device holds at most 4 asks. A 5th `notify` gets no `delivered` ack and is otherwise ignored.
+  The server keeps that delivery `queued` and sends every queued, open ask again (oldest first, at most 4 frames)
+  whenever a slot may have freed: on connect, after any final ack (`answered`/`dismissed`) from that device, after a
+  `retract` to it, and with each new ask. A repeated id re-acks `delivered`; the server treats that as a no-op.
+- **Ids.** The device refuses ids over 40 characters; the server's ask ids are 16 (`ask_` + 12).
+- **Offline answers are lost.** Lines the device writes while the socket is down are dropped, not replayed. An answer
+  given offline never arrives: the delivery stays `seen` and the ask expires (or is answered elsewhere) as usual.
+- **Liveness and backoff.** The device counts any inbound frame (`pong` or JSON) as liveness. A `401` or `429` on
+  connect makes it back off; only close code 4001 stops it reconnecting.
+- **`notifylink`** is the device's own local config command (sets the URL and token); it never crosses the socket.
+- **Server → device commands** other than `notify` (`status`, time sync) are not sent by the server yet; device →
+  server `{"ack":"status",…}` lines are stored as the destination's `lastStatus`.
+
+Reference mock of the server side: `buddy-kit/tools/notify_mock.mjs`.
+
+## Pairing over Wi-Fi (device code flow, RFC 8628 style)
+
+A device that is online and knows the notify URL but has no token pairs without a cable: it shows a short code, the
+owner types it into the console (signed in with an API key), and the device fetches its token.
+
+1. Device → `POST /api/devices/pair` (no auth) with `{"model":"Spotpear Muma 1.54","fw":"0.5.0","hw":"ac:a7:04:22:90:84"}`
+   → `201 {"pairingId":"prq_…","deviceSecret":"prs_…","code":"K7M-4QX","expiresIn":600,"interval":5}`.
+   Rate-limited per client IP (10 an hour → 429 with `Retry-After`).
+2. Device shows `code` large ("Enter at <console>") with the LED pulsing blue, and polls
+   `GET /api/devices/pair/{pairingId}` with `Authorization: Bearer <deviceSecret>` every `interval` seconds:
+   - `200 {"status":"pending"}`
+   - `200 {"status":"approved","token":"dtk_…","destinationId":"dst_…","connect":"wss://<host>/api/devices/connect"}`:
+     returned **once**; the device stores the token (NVS `secrets/notifytok`) and dials `connect`. Later polls → `410`.
+   - `200 {"status":"expired"}` after `expiresIn`, or `404` for an unknown id or a wrong secret; the device stops and
+     shows "pairing expired".
+3. Owner → `POST /api/devices/pair/approve` (API key) with `{"code":"K7M-4QX","name":"Desk Muma","tags":["desk"]}`
+   → `201` the new destination (no token in this response). An unknown or expired code → `404`; approve attempts are
+   rate-limited per key.
+
+- Codes: 6 characters of Crockford base32 without `0 O 1 I L U`, shown as `XXX-XXX`, matched case-insensitively with
+  the dash optional, single-use, valid 10 minutes.
+- The device derives the HTTPS base from its configured URL (`wss://host/api/devices/connect` → `https://host`;
+  `ws://` → `http://` for LAN dev). Device command: `{"cmd":"notifylink","url":"<ws(s) url>","pair":true}` starts
+  pairing (it replaces any stored token once approved).

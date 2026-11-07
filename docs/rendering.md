@@ -85,12 +85,15 @@ its close path the same way or it WILL leave ghosts (in ASCII-buddy mode
 
 ### glance
 
-glance has no territories: `statusDraw` and `notifyScreenDraw` each
-`fillScreen` and repaint the whole canvas every frame, so switching between
-them is a full clear by construction. The loop picks one:
-`notifyHead(gNotify)` non-empty → notify, else status. Side effects the
-notify surface needs (ttl expiry, the `seen` ack, the LED pulse) run in
-`notifyScreenTick()` before the draw; the draw only reads.
+glance has no territories: `pairScreenDraw`, `notifyScreenDraw` and
+`statusDraw` each `fillScreen` and repaint the whole canvas every frame, so
+switching between them is a full clear by construction. The loop picks the
+topmost: pairing active → pairing overlay, else an ask pending → notify,
+else status. Side effects run before the draw: `notifyScreenTick(visible)`
+(ttl expiry; the `seen` ack only when notify is actually on screen, not
+under the pairing overlay), `pairLinkTick()` (adopts an approved token),
+and `ledTick()` (the one LED owner: blue pulse pairing, amber/red pulse
+for a pending ask, green when paired, else off). The draws only read.
 
 ## Display push (hal/hw/display.cpp)
 

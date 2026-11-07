@@ -16,7 +16,9 @@ A single static page (`web/index.html` + `flasher.js`), four steps:
    NVS + spiffs alone, so **Wi-Fi creds and characters survive a flash** (like
    `pio upload`). Tick erase for a clean wipe.
 3. **Connect & set Wi-Fi** — our own Web Serial client sends
-   `{"cmd":"wifi",...}` and polls `{"cmd":"status"}`.
+   `{"cmd":"wifi",...}` and polls `{"cmd":"status"}`. glance also speaks
+   Improv Serial, so ESP Web Tools' own "Configure Wi-Fi" works for it
+   (manifest `improv: true`; buddy stays `false`, ADR 015).
 4. **See it live** — `{"cmd":"vdp","on":true}` streams the real framebuffer
    into a canvas (the [vdp tee](decisions/011-virtual-display-is-a-framebuffer-tee.md)).
 

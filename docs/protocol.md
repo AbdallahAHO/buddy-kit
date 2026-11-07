@@ -54,8 +54,9 @@ The table above is **buddy**, the full composition. **glance** speaks only
 three divergences:
 
 - its `status` ack is a slim blob — `name` fixed to `"glance"`, `sys
-  {up,heap}`, `wifi`, `hub`, ★`notify {url,ok}` (never the token), `ota`
-  only (no owner/sec/bat/stats/jiggler/fs);
+  {up,heap}`, `wifi`, `hub`, ★`notify {url,ok,pair,code}` (never the
+  token; `pair` ∈ idle/requesting/waiting/approved/expired/failed, `code`
+  only while waiting), `ota` only (no owner/sec/bat/stats/jiggler/fs);
 - `wifi` `"forget":true` is **not implemented** — it acks `ok:false` and
   leaves the creds untouched;
 - `wifi` `"portal":true` is headless — no QR screen; join the SoftAP and
@@ -73,7 +74,8 @@ with the notify API; change it only by bumping `v`). Device side:
 | Line | Effect |
 |---|---|
 | ★`{"cmd":"notifylink","url":"ws(s)://…/api/devices/connect","token":"dtk_…"}` | hold the notify socket; url → NVS `buddy/notifyurl`, token → NVS `secrets/notifytok`; omit `token` to keep the stored one. Ack `{"ack":"notifylink","ok":bool,"n":0}` |
-| ★`{"cmd":"notifylink","off":true}` | close the socket, forget url + token |
+| ★`{"cmd":"notifylink","url":"ws(s)://…","pair":true}` | pair over Wi-Fi (contract's "Pairing over Wi-Fi"): show a code, poll, then store the approved token + `connect` url and dial. Optional `"console":"<url or host>"` sets the "Enter at" host (default: the notify host). Ack `ok:false` on a bad url |
+| ★`{"cmd":"notifylink","off":true}` | close the socket, forget url + token, cancel any pairing |
 | `{"cmd":"notify","v":1,"id":…}` | an ask (server frame; also accepted over USB/hub for testing) → `{"ack":"notify","id":…,"state":"delivered"}` |
 | `{"cmd":"notify","v":1,"id":…,"retract":true}` | drop it if queued/shown, no ack |
 
@@ -92,9 +94,20 @@ like an id-less notify ack. Device rules on top of the contract:
   through `gLineOut`, so USB sees them too.
 - Lines written while the socket is down are dropped, not buffered: an
   answer given offline is lost and the ask expires server-side.
+- Pairing: `POST /api/devices/pair` sends `model` (board lines 1+2), `fw`
+  and `hw` (Wi-Fi STA MAC, lowercase). No response, 429 and 5xx while
+  polling keep polling; 404/410/`expired` stop with "pairing expired"; the
+  device also gives up one interval after `expiresIn`. The pairing waits
+  for Wi-Fi if it starts offline.
 
-Local mock: `node tools/notify_mock.mjs` (zero deps; `PORT`, `TOKEN` env;
-stdin `q a m n` send asks, `r <id>` retracts, `k` closes with 4001).
+USB also answers **Improv Serial** (ESP Web Tools "Configure Wi-Fi"); see
+connectivity.md and [ADR 015](decisions/015-improv-serial-shares-the-usb-line-port.md).
+
+Local mock: `node tools/notify_mock.mjs` (zero deps; `PORT`, `TOKEN`,
+`PAIR_AUTO` (s to auto-approve, 0 = off), `PAIR_TTL`, `PAIR_INTERVAL` env;
+stdin `q a m n` send asks, `r <id>` retracts, `k` closes with 4001, `p
+[CODE]` approves a pairing, `e` expires pending ones). Approved pairings
+hand out `TOKEN` and `connect: ws://<host the device used>/api/devices/connect`.
 
 ## Folder push (character install)
 

@@ -25,6 +25,8 @@ Cloudflare Worker instead of an AMOLED pet fed by BLE).
 │ lib/agent-state    AgentState schema + apply + selector      │  pure C++,
 │ lib/line-bus       ByteSource pipe + framer + dispatch       │  native-
 │ lib/notify-queue   notify v1 inbox: ttl/retract/select/acks  │  testable
+│ lib/notify-pair    device-code pairing state machine         │
+│ lib/improv-serial  Improv Serial parser + encoders           │
 │ lib/file-push      chunked transfer protocol (FileSink)      │
 │ lib/transport-usb / -ble / -http / -ws (notify socket)       │
 │ lib/wifi-link      provisioning + connection lifecycle       │
@@ -76,8 +78,9 @@ is: **render functions never mutate shared state.**
   no `std::vector`, no heap in hot paths. Fixed-size buffers everywhere.
 - Contracts are C-style: structs of function pointers (`ByteSource`,
   `FileSink`) or link-time symbols.
-- `lib/agent-state`, `lib/line-bus` and `lib/notify-queue` must stay
-  Arduino-free (they compile under PlatformIO's `native` platform for tests).
+- `lib/agent-state`, `lib/line-bus`, `lib/notify-queue`, `lib/notify-pair`
+  and `lib/improv-serial` must stay Arduino-free (they compile under
+  PlatformIO's `native` platform for tests).
 
 Rationale: [ADR 002](decisions/002-c6-heap-is-the-floor.md).
 

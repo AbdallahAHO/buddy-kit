@@ -50,6 +50,8 @@ apps/glance         the second composition: hub-fed fleet status panel +
   lib/transport-http  hub polling as a ByteSource (GET /poll, POST /push) over wifi-link
   lib/transport-ws  notify v1 WebSocket as a ByteSource (IDF esp_transport_ws, CA-bundle TLS)
   lib/notify-queue  notify inbox: 4 asks, ttl, retract, action select, ack lines (pure C++)
+  lib/notify-pair   notify device-code pairing state machine (pure C++)
+  lib/improv-serial Improv Serial parser + encoders, shares USB with line-JSON (pure C++)
   lib/virtual-display framebuffer tee → live browser viewer over WebSerial
   lib/faces         18 ASCII species + GIF character player (7-state persona contract)
   hal/hw            display/input/power/imu/rtc/audio/led, stateless, board-flag driven
@@ -117,7 +119,10 @@ device answer over the air.
 
 `{"cmd":"notifylink","url":"ws://host:8787/api/devices/connect","token":"dtk_…"}`
 makes glance hold a socket to the notify API and show its asks (question /
-approval / message) with the button as the answer. Local mock:
+approval / message) with the button as the answer. Or pair without a token:
+`{"cmd":"notifylink","url":"wss://…/api/devices/connect","pair":true}` shows
+a code to enter in the console. Wi-Fi can also be set from ESP Web Tools'
+"Configure Wi-Fi" (Improv Serial over USB). Local mock:
 `node tools/notify_mock.mjs`. Contract: [docs/notify-protocol.md](docs/notify-protocol.md).
 
 ## Roadmap

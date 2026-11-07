@@ -23,8 +23,8 @@ companion pet) is the first composition. Full breakdown lives in
    `app_commands.cpp`. Never re-introduce parallel copies.
 5. **Heapless contracts.** The C6 (512 KB, no PSRAM) is the floor: no
    std::function/std::vector, fixed-size buffers, no heap in hot paths.
-   `lib/agent-state`, `lib/line-bus` and `lib/notify-queue` stay
-   Arduino-free (native tests).
+   `lib/agent-state`, `lib/line-bus`, `lib/notify-queue`,
+   `lib/notify-pair` and `lib/improv-serial` stay Arduino-free (native tests).
 6. **Acks fan out.** Replies always go through `gLineOut` (USB+BLE+hub),
    never `Serial` alone.
 

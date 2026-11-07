@@ -100,6 +100,38 @@ while a url is set, not revoked, and wifi is ONLINE:
 Muma heap: 284.9 KB free at boot with notify unconfigured, 276.2 KB once
 the task exists (parked, Wi-Fi off). A TLS session adds ~40 KB while up.
 
+## notify pairing (apps/glance/pair_link.cpp + lib/notify-pair)
+
+`{"cmd":"notifylink","url":…,"pair":true}` runs the contract's device-code
+flow from a `pair_link` task (8 KB stack, exits when the pairing ends),
+never the loop. HTTP is IDF's `esp_http_client` with fixed buffers;
+`https://` attaches the same CA bundle as `wss://`. The state machine
+(base URL `wss://h/…` → `https://h`, reply handling, code formatting,
+deadline) is pure and native-tested; the task only does I/O and feeds
+results back under a mutex. On approval the loop stores the token
+(`secrets/notifytok`) and the `connect` url (`buddy/notifyurl`) and starts
+transport-ws, replacing any previous link. The deviceSecret and token live
+only in RAM until then and are zeroed after use.
+
+## Improv Serial (USB Wi-Fi provisioning)
+
+glance answers [Improv Serial](https://www.improv-wifi.com/serial/) v1 on
+the USB port next to line-JSON
+([ADR 015](decisions/015-improv-serial-shares-the-usb-line-port.md)):
+a packet can only start where a line would, so JSON is never misread.
+
+| RPC | Reply |
+|---|---|
+| 0x01 Wi-Fi settings | state *provisioning* → `wifiLinkJoin` (creds persist on success) → state *provisioned* + result with no URL (glance serves none), or error *unable to connect* + state *ready* |
+| 0x02 get current state | *provisioned* (+ empty result) when online, else *ready* / *provisioning* |
+| 0x03 get device info | `glance`, fw version, chip model, board name |
+| anything else (scan, hostname, …) | error *unknown RPC* (ESP Web Tools falls back to typing the SSID) |
+| bad checksum / malformed | error *invalid RPC* |
+
+Improv has no identify RPC over serial. Replies go to USB only. The web
+flasher manifest declares `improv: true` for glance, so ESP Web Tools shows
+"Configure Wi-Fi" after install.
+
 ## Coexistence budget (C6)
 
 BLE (NimBLE) + Wi-Fi STA + portal all run together: ~108 KB heap free during

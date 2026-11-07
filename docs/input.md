@@ -29,14 +29,18 @@ hardware power-off; any button wakes a sleeping screen and that press is
 
 ### glance's ladder (`apps/glance/src/input_router.cpp::inputRoute()`)
 
-glance has one button (BOOT on the Muma) and a two-rung ladder:
+glance has one button (BOOT on the Muma) and a three-rung ladder:
 
 ```
- 1. notify ask on screen?  A short: next action (wraps)
+ 1. pairing overlay?       A hold ≥ 600 ms: cancel (requesting/waiting/paired)
+                           any press: close it once expired or failed
+ 2. notify ask on screen?  A short: next action (wraps)
                            A hold ≥ 600 ms: choose → answered "<label>",
                            or dismissed when the ask has no actions
- 2. nothing focused        input ignored
+ 3. nothing focused        input ignored
 ```
+
+A press belongs to the rung that was on screen when it began.
 
 A press is pinned to the id of the ask on screen when it *began*; if that
 ask is retracted or expires mid-hold, the press is cancelled, so no ask is

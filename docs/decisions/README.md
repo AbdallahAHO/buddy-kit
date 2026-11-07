@@ -37,3 +37,4 @@ The `adr` skill (`.agents/skills/adr/`) walks through writing one.
 - [012](012-blocks-are-source-you-own.md) — Blocks are app source you copy in, not a library you depend on
 - [013](013-browser-web-flasher.md) — Distribute via a browser web flasher (ESP Web Tools), binaries in Releases not git
 - [014](014-notify-socket-on-idf-ws-transport.md) — The notify socket uses IDF's esp_transport_ws and verifies TLS against the built-in CA bundle
+- [015](015-improv-serial-shares-the-usb-line-port.md) — Improv Serial shares the USB port with line-JSON, detected only at line start

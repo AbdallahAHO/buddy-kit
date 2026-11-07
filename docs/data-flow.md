@@ -72,6 +72,11 @@ glance's `dataPoll()` writes the disconnect state ("no agent data", zeroed
 sessions) into the store straight from the pump when 30 s pass without a
 valid line.
 
+The USB pump first offers each byte to the Improv parser (only at line
+start, see ADR 015); Improv packets go to `improv_link.cpp`, everything
+else to the line framer as before. Pairing state lives in `pair_link.cpp`
+behind a mutex and is read once per frame as a `PairView` copy.
+
 The second store slice is `gNotify` (lib/notify-queue): `notify` frames
 enter it via `cmdNotify` (acking `delivered`), `notifyScreenTick()` expires
 it and acks `seen`, and `inputRoute()` drains it (acking `answered` /
