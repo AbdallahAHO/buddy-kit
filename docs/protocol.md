@@ -50,10 +50,12 @@ failure). Buddy-kit additions are marked ★.
 ### Per-app command surface
 
 The table above is **buddy**, the full composition. **glance** speaks only
-`status` / `wifi` / `hub` / `ota` / `vdp`, with three divergences:
+`status` / `wifi` / `hub` / `ota` / `vdp` plus the notify pair below, with
+three divergences:
 
 - its `status` ack is a slim blob — `name` fixed to `"glance"`, `sys
-  {up,heap}`, `wifi`, `hub`, `ota` only (no owner/sec/bat/stats/jiggler/fs);
+  {up,heap}`, `wifi`, `hub`, ★`notify {url,ok}` (never the token), `ota`
+  only (no owner/sec/bat/stats/jiggler/fs);
 - `wifi` `"forget":true` is **not implemented** — it acks `ok:false` and
   leaves the creds untouched;
 - `wifi` `"portal":true` is headless — no QR screen; join the SoftAP and
@@ -62,6 +64,37 @@ The table above is **buddy**, the full composition. **glance** speaks only
 Every other `cmd` (name/owner/species/unpair/jiggler, the whole folder
 push below) is swallowed with **no ack** — don't send buddy-only commands
 to glance and wait on a reply.
+
+## ★ notify over WebSocket (glance; lib/transport-ws + lib/notify-queue)
+
+The wire contract is [notify-protocol.md](notify-protocol.md) (v1, shared
+with the notify API; change it only by bumping `v`). Device side:
+
+| Line | Effect |
+|---|---|
+| ★`{"cmd":"notifylink","url":"ws(s)://…/api/devices/connect","token":"dtk_…"}` | hold the notify socket; url → NVS `buddy/notifyurl`, token → NVS `secrets/notifytok`; omit `token` to keep the stored one. Ack `{"ack":"notifylink","ok":bool,"n":0}` |
+| ★`{"cmd":"notifylink","off":true}` | close the socket, forget url + token |
+| `{"cmd":"notify","v":1,"id":…}` | an ask (server frame; also accepted over USB/hub for testing) → `{"ack":"notify","id":…,"state":"delivered"}` |
+| `{"cmd":"notify","v":1,"id":…,"retract":true}` | drop it if queued/shown, no ack |
+
+The config command is `notifylink`, not `notify`: `notify` is the server's
+frame, and a plain `{"ack":"notify","ok":…}` would reach the socket looking
+like an id-less notify ack. Device rules on top of the contract:
+
+- Inbox of **4**. A 5th ask gets **no** `delivered` ack, so the server keeps
+  it queued and re-sends it on the next connect. A repeated id re-acks
+  `delivered` without a second copy. `ttl ≤ 0` is dropped on arrival; no
+  `ttl` = no expiry. Ids over 40 chars are refused (a truncated id could
+  never be acked); other fields truncate to the contract limits on UTF-8
+  boundaries.
+- `seen` goes out the frame the ask first becomes the head of the inbox;
+  `answered` / `dismissed` on the button (see input.md). All acks go
+  through `gLineOut`, so USB sees them too.
+- Lines written while the socket is down are dropped, not buffered: an
+  answer given offline is lost and the ask expires server-side.
+
+Local mock: `node tools/notify_mock.mjs` (zero deps; `PORT`, `TOKEN` env;
+stdin `q a m n` send asks, `r <id>` retracts, `k` closes with 4001).
 
 ## Folder push (character install)
 

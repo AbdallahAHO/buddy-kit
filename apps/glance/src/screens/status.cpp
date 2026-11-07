@@ -1,7 +1,7 @@
-// The one glance surface: a full-screen status panel repainted every frame.
-// It owns the whole canvas and never closes, so the ghost rule's
-// full-clear-on-close path doesn't apply (AGENTS.md rule 3). Reads state,
-// never writes it.
+// The default glance surface: a full-screen status panel repainted every
+// frame. It owns the whole canvas whenever the notify screen isn't up, and
+// both repaint every pixel, so swapping them is a full clear (AGENTS.md
+// rule 3). Reads state, never writes it.
 #include <Arduino.h>
 #include "../glance_state.h"
 #include "ui_canvas.h"

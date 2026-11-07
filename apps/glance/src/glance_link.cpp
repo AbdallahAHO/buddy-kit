@@ -1,4 +1,4 @@
-// Transport pump for glance: USB serial + hub HTTP only — no BLE, no demo
+// Transport pump for glance: USB serial + hub HTTP + notify WebSocket — no BLE, no demo
 // mode. Each line is tried as a command first, else applied as an agent
 // snapshot into the shared store.
 #include <Arduino.h>
@@ -7,6 +7,7 @@
 #include "line_bus.h"
 #include "transport_usb.h"
 #include "transport_http.h"
+#include "transport_ws.h"
 #include "agent_state.h"
 #include "hw/rtc.h"
 #include "glance_state.h"
@@ -66,11 +67,12 @@ static void _pump(ByteSource& src, LineFramer<N>& f, TamaState* out) {
   }
 }
 
-static LineFramer<1024> _usbLine, _httpLine;
+static LineFramer<1024> _usbLine, _httpLine, _wsLine;
 
 void dataPoll(TamaState* out) {
   _pump(usbSerialSource(), _usbLine, out);
   _pump(httpByteSource(), _httpLine, out);
+  _pump(wsByteSource(), _wsLine, out);
 
   out->connected = dataConnected();
   if (!out->connected) {

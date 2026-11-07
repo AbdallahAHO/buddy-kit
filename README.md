@@ -37,8 +37,8 @@ apps/buddy          the composition root (~470-line main.cpp)
                                  screen-local state behind tiny APIs
   apps/buddy/src/overlays.cpp    menu/settings/reset as data tables → one ListPanel
   apps/buddy/src/input_router.cpp  raw input → focus ladder (approval > wifi > overlay > screen)
-apps/glance         the second composition: hub-fed fleet status panel —
-                    same legos, no BLE / faces / input routing, one screen
+apps/glance         the second composition: hub-fed fleet status panel +
+                    notify asks over a WebSocket — no BLE / faces, one button
   lib/agent-state   AgentState schema + snapshot apply + persona selector (pure C++)
   lib/line-bus      ByteSource pipe contract, newline framer, ack fan-out, cmd dispatch
   lib/transport-ble NUS BLE bridge (NimBLE for C6, Bluedroid for S3, via -D flag)
@@ -48,6 +48,8 @@ apps/glance         the second composition: hub-fed fleet status panel —
   lib/hid-mouse     BLE HID mouse on the shared GATT server (jiggler mode)
   lib/ota           wireless firmware update (HTTP pull, dual-OTA slots)
   lib/transport-http  hub polling as a ByteSource (GET /poll, POST /push) over wifi-link
+  lib/transport-ws  notify v1 WebSocket as a ByteSource (IDF esp_transport_ws, CA-bundle TLS)
+  lib/notify-queue  notify inbox: 4 asks, ttl, retract, action select, ack lines (pure C++)
   lib/virtual-display framebuffer tee → live browser viewer over WebSerial
   lib/faces         18 ASCII species + GIF character player (7-state persona contract)
   hal/hw            display/input/power/imu/rtc/audio/led, stateless, board-flag driven
@@ -110,6 +112,13 @@ its replies) whenever Wi-Fi is up. Persisted; survives reboot. Local dev
 hub: `python3 tools/test_hub.py`, then
 `curl -d '{"cmd":"status"}' http://localhost:8787/queue` and watch the
 device answer over the air.
+
+## notify over WebSocket (glance)
+
+`{"cmd":"notifylink","url":"ws://host:8787/api/devices/connect","token":"dtk_…"}`
+makes glance hold a socket to the notify API and show its asks (question /
+approval / message) with the button as the answer. Local mock:
+`node tools/notify_mock.mjs`. Contract: [docs/notify-protocol.md](docs/notify-protocol.md).
 
 ## Roadmap
 

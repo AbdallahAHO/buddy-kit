@@ -62,15 +62,20 @@ BLE counts as active if bytes arrived within 15 s (desktop keepalive is
 
 ## glance's reduced pipeline (apps/glance)
 
-Same framer and store, two transports (USB + hub — no BLE) and a trimmed
-dispatch: `glance_link.cpp::_applyLine` tries `glanceCommand()` (plain
-`lineBusDispatch` over five cmds — no `filePushHandle`, and no
+Same framer and store, three transports (USB + hub + the notify socket —
+no BLE) and a trimmed dispatch: `glance_link.cpp::_applyLine` tries
+`glanceCommand()` (plain `lineBusDispatch` over seven cmds — no `filePushHandle`, and no
 `"permission"` fall-through since glance has no prompt UI), and any other
 `{"cmd":…}` doc is swallowed so buddy-only commands never reach
 `agentApplyJson()` and fake liveness. There is no demo/live/asleep ladder;
 glance's `dataPoll()` writes the disconnect state ("no agent data", zeroed
 sessions) into the store straight from the pump when 30 s pass without a
 valid line.
+
+The second store slice is `gNotify` (lib/notify-queue): `notify` frames
+enter it via `cmdNotify` (acking `delivered`), `notifyScreenTick()` expires
+it and acks `seen`, and `inputRoute()` drains it (acking `answered` /
+`dismissed`). Every ack is a line through `gLineOut`.
 
 ## Stats persistence (stats.cpp, NVS namespace "buddy")
 

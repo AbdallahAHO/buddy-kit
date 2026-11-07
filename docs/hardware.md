@@ -58,6 +58,10 @@ NVS namespace `"buddy"` holds everything: stats, settings (`s_*`), petname/
 owner, species, `wssid`/`wpass`, `huburl`/`hubtok`, `s_jig`. App-only uploads preserve it;
 `factory reset` (or `pio run -t erase`) wipes it.
 
+glance adds `notifyurl` to `"buddy"` and keeps the notify device token in
+its own namespace **`"secrets"`** (key `notifytok`) so no status/debug path
+that dumps `"buddy"` can leak it.
+
 The namespace and the `wssid`/`wpass`/`huburl`/`hubtok` keys are a
 **cross-app contract**: glance deliberately reuses them (its `wifi_store.cpp`
 and hub persistence) so a board re-flashed between buddy and glance keeps

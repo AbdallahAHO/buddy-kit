@@ -18,14 +18,15 @@ Cloudflare Worker instead of an AMOLED pet fed by BLE).
 │   overlays.cpp     menus as data tables                      │
 │   input_router.cpp the focus ladder                          │
 │   *_store.cpp      policy impls injected into libs           │
-│ apps/glance — hub-fed status panel (second composition)      │
+│ apps/glance — hub-fed status panel + notify asks              │
 ├──────────────────────────────────────────────────────────────┤
 │ lib/ui-canvas      tokens + atoms + ListPanel molecule       │
 │ lib/faces          ASCII species + GIF player (7-state)      │
 │ lib/agent-state    AgentState schema + apply + selector      │  pure C++,
 │ lib/line-bus       ByteSource pipe + framer + dispatch       │  native-
-│ lib/file-push      chunked transfer protocol (FileSink)      │  testable →
-│ lib/transport-usb / transport-ble / transport-http           │
+│ lib/notify-queue   notify v1 inbox: ttl/retract/select/acks  │  testable
+│ lib/file-push      chunked transfer protocol (FileSink)      │
+│ lib/transport-usb / -ble / -http / -ws (notify socket)       │
 │ lib/wifi-link      provisioning + connection lifecycle       │
 │ lib/virtual-display  framebuffer tee → browser viewer        │
 ├──────────────────────────────────────────────────────────────┤
@@ -75,8 +76,8 @@ is: **render functions never mutate shared state.**
   no `std::vector`, no heap in hot paths. Fixed-size buffers everywhere.
 - Contracts are C-style: structs of function pointers (`ByteSource`,
   `FileSink`) or link-time symbols.
-- `lib/agent-state` and `lib/line-bus` must stay Arduino-free (they compile
-  under PlatformIO's `native` platform for tests).
+- `lib/agent-state`, `lib/line-bus` and `lib/notify-queue` must stay
+  Arduino-free (they compile under PlatformIO's `native` platform for tests).
 
 Rationale: [ADR 002](decisions/002-c6-heap-is-the-floor.md).
 

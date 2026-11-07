@@ -83,6 +83,15 @@ If you add a surface that paints the middle band or the full canvas, wire
 its close path the same way or it WILL leave ghosts (in ASCII-buddy mode
 `characterInvalidate()` alone clears nothing).
 
+### glance
+
+glance has no territories: `statusDraw` and `notifyScreenDraw` each
+`fillScreen` and repaint the whole canvas every frame, so switching between
+them is a full clear by construction. The loop picks one:
+`notifyHead(gNotify)` non-empty → notify, else status. Side effects the
+notify surface needs (ttl expiry, the `seen` ack, the LED pulse) run in
+`notifyScreenTick()` before the draw; the draw only reads.
+
 ## Display push (hal/hw/display.cpp)
 
 Canvas → panel strategy is per-board via capability flags:

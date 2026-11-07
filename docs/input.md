@@ -27,6 +27,23 @@ Other physical inputs: AXP key short-tap = screen off/on toggle; 6 s hold =
 hardware power-off; any button wakes a sleeping screen and that press is
 **swallowed** (it won't also act).
 
+### glance's ladder (`apps/glance/src/input_router.cpp::inputRoute()`)
+
+glance has one button (BOOT on the Muma) and a two-rung ladder:
+
+```
+ 1. notify ask on screen?  A short: next action (wraps)
+                           A hold ≥ 600 ms: choose → answered "<label>",
+                           or dismissed when the ask has no actions
+ 2. nothing focused        input ignored
+```
+
+A press is pinned to the id of the ask on screen when it *began*; if that
+ask is retracted or expires mid-hold, the press is cancelled, so no ask is
+ever answered unseen. The router runs before
+`dataPoll()` in the loop, so a press acts on the ask drawn last frame even
+if a retract lands in the same iteration.
+
 Permission decisions are sent from the router via `sendCmd` →
 `gLineOut`, so they reach USB, BLE **and** the HTTP hub.
 
