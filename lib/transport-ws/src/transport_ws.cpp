@@ -151,8 +151,10 @@ static SessionEnd _session(const char* url, const char* token, uint32_t gen) {
       if (now - lastRx >= SILENT_LIMIT_MS) { Serial.println("[ws] no pong for 75 s"); break; }
       if (now - lastPing >= PING_EVERY_MS) {
         lastPing = now;
+        // send_raw masks the payload in place: a literal lives in flash, and writing it panics the chip
+        char ping[4] = { 'p', 'i', 'n', 'g' };
         if (esp_transport_ws_send_raw(ws, (ws_transport_opcodes_t)(WS_TRANSPORT_OPCODES_TEXT | WS_TRANSPORT_OPCODES_FIN),
-                                      "ping", 4, 5000) < 0) break;
+                                      ping, sizeof(ping), 5000) < 0) break;
       }
       if (!_flushTx(ws)) break;
 
