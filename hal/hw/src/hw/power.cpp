@@ -3,6 +3,8 @@
 #include <Wire.h>
 #include <XPowersLib.h>
 
+#if BOARD_HAS_AXP2101
+
 static XPowersPMU s_pmu;
 
 bool hwPowerInit() {
@@ -85,3 +87,31 @@ bool hwAxpPekeyLongPress() {
 }
 
 XPowersPMU* hwPmuRef() { return &s_pmu; }
+
+#else   // No PMU: battery sense on an ADC divider, nothing to switch off.
+
+bool hwPowerInit() {
+  pinMode(PIN_CHARGE_DET, INPUT);
+  analogReadResolution(12);
+  return true;
+}
+
+HwBattery hwBattery() {
+  HwBattery b;
+  b.mV         = analogReadMilliVolts(PIN_BAT_ADC) * 2;   // 1:2 divider
+  b.mA         = 0;
+  int p        = (b.mV - 3200) / 10;
+  if (p < 0) p = 0; if (p > 100) p = 100;
+  b.pct        = p;
+  b.usbPresent = true;   // no VBUS sense; USB is the only supply on a desk build
+  b.charging   = digitalRead(PIN_CHARGE_DET) == HIGH;
+  b.tempC      = 0;
+  return b;
+}
+
+void hwPowerOff() {}
+bool hwAxpPekeyShortPress() { return false; }
+bool hwAxpPekeyLongPress()  { return false; }
+XPowersPMU* hwPmuRef() { return nullptr; }
+
+#endif

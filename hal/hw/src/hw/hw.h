@@ -7,6 +7,7 @@
 #include "hw/audio.h"
 #include "hw/border.h"
 #include "hw/expander.h"
+#include "hw/led.h"
 #include "hw/pins.h"
 
 void hwInit();   // initialises every subsystem; while(1) on any failure

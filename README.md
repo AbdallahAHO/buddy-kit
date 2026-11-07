@@ -50,7 +50,7 @@ apps/glance         the second composition: hub-fed fleet status panel —
   lib/transport-http  hub polling as a ByteSource (GET /poll, POST /push) over wifi-link
   lib/virtual-display framebuffer tee → live browser viewer over WebSerial
   lib/faces         18 ASCII species + GIF character player (7-state persona contract)
-  hal/hw            display/input/power/imu/rtc/audio, stateless, board-flag driven
+  hal/hw            display/input/power/imu/rtc/audio/led, stateless, board-flag driven
   hal/boards        one capability header per board, selected via -DBOARD_*
   vendor/           upstream-vendored driver libs (ES8311, XCA9554, DriveBus)
   blocks/           copy-in compositions (screen + menu row + ladder rungs);

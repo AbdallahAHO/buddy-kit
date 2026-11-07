@@ -92,6 +92,7 @@ Canvas → panel strategy is per-board via capability flags:
 | Streamed 2× | C6 2.16" | one continuous QSPI transaction, CS held — this panel blanks if CS toggles between rows |
 | Letterbox bilinear | 1.75C, S3 2.16" | PSRAM full-frame buffer |
 | Plain 2× per row | S3 1.8" | 240 MHz S3 outruns the panel timeout |
+| Native one-shot blit (scale 1) | Muma 1.54" (ST7789 SPI) | canvas = panel; brightness is backlight PWM, not a panel command |
 
 ## Frame pacing
 

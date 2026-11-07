@@ -8,6 +8,7 @@
 | `waveshare-esp32s3-touch-amoled-1-8` | ESP32-S3, 368×448 (SH8601), PSRAM | compile-verified |
 | `waveshare-esp32s3-touch-amoled-1-75c` | round 466×466 (CO5300) | compile-only |
 | `waveshare-esp32s3-touch-amoled-2-16` | 480×480 (CO5300) | compile-only |
+| `spotpear-esp32s3-muma-1-54` (glance only) | ESP32-S3, 240×240 ST7789 SPI IPS, 8 MB PSRAM, 16 MB flash, CST816D touch, WS2812 LED; no PMU/IMU/RTC | see "Spotpear Muma 1.54" below |
 
 The HAL pattern: `hal/boards/<board>.h` declares pins + ~20 capability flags
 (`BOARD_HAS_PSRAM`, `BOARD_DISPLAY_PUSH_STREAMED`, `BOARD_KEY1_ACTIVE_HIGH`…);
@@ -74,6 +75,30 @@ silently breaks the other — change them in both or not at all.
   `test_xfer.py` notes this; check `file_end`'s `n` before assuming loss.
 - **Opening the serial port DTR-resets the chip.** Wait ~2 s before the
   first command (the test tools do).
+
+## Spotpear Muma 1.54" (non-Waveshare board)
+
+The only board without an AXP2101, so it adds flags the AMOLED headers
+default in `pins.h`: `BOARD_DISPLAY_ST7789`, `BOARD_TOUCH_CST816`,
+`BOARD_HAS_QMI8658` (0 → IMU reports flat, face-up),
+`BOARD_HAS_RGB_LED` (`hwLed(r,g,b)`), and `BOARD_HAS_AXP2101` now gates
+`power.cpp` (0 → battery from the ADC divider on GPIO1, `hwPowerOff` and
+the PEK helpers are no-ops, `hwPmuRef()` is null).
+
+- **Display:** plain 4-wire SPI at 40 MHz, canvas = panel (scale 1, one-shot
+  blit). Brightness is backlight PWM on GPIO42, **inverted** (duty 0 = full).
+- **Touch:** CST816D on its own bus (`TwoWire(1)`, SDA11/SCL7, addr 0x15),
+  polled every frame (no IRQ). Chip id read from 0xA3 like the xiaozhi
+  board code; 0xFF/0x00 = the non-touch SKU, and `hwInputInit` keeps going
+  button-only instead of dying.
+- **Buttons:** BOOT (GPIO0) is `hwBtnA()`; PWR is a hardware power latch,
+  not a GPIO. `hwBtnB()` never fires.
+- **Audio:** ES8311 + PA on the same pins as the 1.8; the speaker connector
+  ships empty, so `hwBeep` is silent until one is plugged in.
+- **Flash/upload:** S3 native USB → **115200 only** on this Mac. If esptool
+  says "No serial data received", hold BOOT → tap PWR → release BOOT.
+  Recovery (xiaozhi image + backups) lives in the esp workspace:
+  `../../esp/boards/xiaozhi-s3-muma-1.54/board.py restore`.
 
 ## Display + fonts
 

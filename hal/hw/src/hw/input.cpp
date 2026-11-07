@@ -7,6 +7,8 @@
 #if BOARD_TOUCH_CST92XX
   #include <Wire.h>
   #include "TouchDrvCSTXXX.hpp"
+#elif BOARD_TOUCH_CST816
+  #include <Wire.h>
 #else
   #include <Arduino_DriveBus_Library.h>
 #endif
@@ -17,6 +19,12 @@ static uint8_t s_axpEvt = 0;
 
 #if BOARD_TOUCH_CST92XX
 static TouchDrvCST92xx s_cst;
+#elif BOARD_TOUCH_CST816
+// CST816D polled over its own I2C bus. Register map per the xiaozhi board
+// code (the managed esp_lcd_touch_cst816s component targets a sibling chip).
+static TwoWire s_tpBus(1);
+static bool    s_tpPresent = false;   // false on the non-touch SKU
+static constexpr uint8_t CST816_ADDR = 0x15;
 #else
 static std::shared_ptr<Arduino_IIC_DriveBus> s_iicBus;
 static std::unique_ptr<Arduino_IIC>          s_ft3168;
@@ -52,6 +60,45 @@ bool hwInputInit() {
   s_cst.setMirrorXY(true, true);
   pinMode(PIN_TP_INT, INPUT);
   attachInterrupt(digitalPinToInterrupt(PIN_TP_INT), onTouchIrq, FALLING);
+  return true;
+#elif BOARD_TOUCH_CST816
+  // hwExpanderResetSequence() already pulsed TP_RESET; the chip needs ~50 ms
+  // after reset before it answers on I2C.
+  delay(50);
+  if (!s_tpBus.begin(PIN_TP_SDA, PIN_TP_SCL, 400000)) {
+    Serial.println("hwInput: touch I2C begin failed; button-only");
+    return true;
+  }
+  // Retry for ~500 ms: the controller's own boot after reset varies.
+  uint8_t chipId = 0xFF;
+  for (int i = 0; i < 10 && (chipId == 0xFF || chipId == 0x00); i++) {
+    if (i) delay(50);
+    s_tpBus.beginTransmission(CST816_ADDR);
+    s_tpBus.write(0xA3);   // chip-id register (as read by the xiaozhi board code)
+    if (s_tpBus.endTransmission(false) == 0 &&
+        s_tpBus.requestFrom(CST816_ADDR, (uint8_t)1) == 1) {
+      chipId = s_tpBus.read();
+    }
+  }
+  Serial.printf("hwInput: CST816 chip id 0x%02X\n", chipId);
+  // 0xFF / 0x00 = nothing on the bus: the non-touch SKU. Not fatal — the
+  // board still has the BOOT key.
+  s_tpPresent = chipId != 0xFF && chipId != 0x00;
+  if (!s_tpPresent) {
+    int found = 0;
+    for (uint8_t a = 0x08; a < 0x78; a++) {
+      s_tpBus.beginTransmission(a);
+      if (s_tpBus.endTransmission() == 0) { Serial.printf("hwInput: touch bus has 0x%02X\n", a); found++; }
+    }
+    Serial.printf("hwInput: no touch panel (%d devices on touch bus); button-only\n", found);
+    return true;
+  }
+  // Disable auto-sleep: a sleeping CST816 NAKs I2C until touched.
+  s_tpBus.beginTransmission(CST816_ADDR);
+  s_tpBus.write(0xFE);
+  s_tpBus.write(0x01);
+  s_tpBus.endTransmission();
+  pinMode(PIN_TP_INT, INPUT_PULLUP);
   return true;
 #else
   s_iicBus = std::make_shared<Arduino_HWIIC>(PIN_I2C_SDA, PIN_I2C_SCL, &Wire);
@@ -113,7 +160,7 @@ static void scanBootKey() {
 }
 #endif
 
-#if !BOARD_HAS_KEY2
+#if !BOARD_HAS_KEY2 && BOARD_HAS_AXP2101
 static void scanAxp() {
   if (hwExpanderAxpIrqLow()) {
     if (hwAxpPekeyShortPress()) s_axpEvt = 0x02;
@@ -133,7 +180,12 @@ static void scanTouch() {
   // Poll when IRQ fires OR when a finger was down last frame — both FT3168
   // and CST92xx only reliably IRQ on state edges, so a drag wouldn't advance
   // x/y without this.
+#if BOARD_TOUCH_CST816
+  // No IRQ hookup: a 6-byte read every frame is ~0.2 ms at 400 kHz.
+  bool shouldPoll = s_tpPresent;
+#else
   bool shouldPoll = s_tpIrqFlag || s_tp.down;
+#endif
   s_tpIrqFlag = false;
 
   if (!shouldPoll) {
@@ -180,6 +232,30 @@ static void scanTouch() {
     s_tp.down = false;
     s_tp.justPressed  = false;
   }
+#elif BOARD_TOUCH_CST816
+  uint8_t buf[6] = {0};
+  s_tpBus.beginTransmission(CST816_ADDR);
+  s_tpBus.write(0x02);   // finger count, then X/Y high+low bytes
+  bool ok = s_tpBus.endTransmission(false) == 0 &&
+            s_tpBus.requestFrom(CST816_ADDR, (uint8_t)6) == 6;
+  if (ok) for (int i = 0; i < 6; i++) buf[i] = s_tpBus.read();
+  uint8_t fingers = ok ? (buf[0] & 0x0F) : 0;
+  if (fingers > 0) {
+    // Panel coords are canvas coords (240×240, scale 1, no offset).
+    int tx = ((buf[1] & 0x0F) << 8) | buf[2];
+    int ty = ((buf[3] & 0x0F) << 8) | buf[4];
+    if (tx >= BOARD_HW_W) tx = BOARD_HW_W - 1;
+    if (ty >= BOARD_HW_H) ty = BOARD_HW_H - 1;
+    s_tp.justPressed  = !s_tp.down;
+    s_tp.justReleased = false;
+    s_tp.x = tx;
+    s_tp.y = ty;
+    s_tp.down = true;
+  } else {
+    s_tp.justReleased = s_tp.down;
+    s_tp.down = false;
+    s_tp.justPressed  = false;
+  }
 #else
   uint8_t fingers = (uint8_t)s_ft3168->IIC_Read_Device_Value(
       Arduino_IIC_Touch::Value_Information::TOUCH_FINGER_NUMBER);
@@ -211,7 +287,7 @@ void hwInputUpdate() {
   scanKey1();
 #if BOARD_HAS_KEY2
   scanKey2();
-#else
+#elif BOARD_HAS_AXP2101
   scanAxp();
 #endif
 #if BOARD_BTN_THIRD

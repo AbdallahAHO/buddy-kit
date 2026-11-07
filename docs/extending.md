@@ -54,7 +54,9 @@ characters need no code — push a folder with per-state GIFs + manifest.json
 
 1. `hal/boards/src/boards/board_<name>.h` — pins + capability flags (copy
    the closest existing header; the flags are documented by example across
-   the four boards).
+   the existing boards). A capability none of them has gets a new flag
+   with a default in `pins.h`, so older headers stay untouched (the Muma's
+   `BOARD_DISPLAY_ST7789` / `BOARD_TOUCH_CST816` are the example).
 2. A branch in `hal/hw/src/hw/pins.h`.
 3. An `[env:<name>]` in `apps/buddy/platformio.ini` with `-DBOARD_<NAME>`
    and the right `-DBUDDY_BLE_*` stack flag.

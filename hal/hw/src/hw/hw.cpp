@@ -38,6 +38,7 @@ void hwInit() {
   if (!hwImuInit())       die("imu");
   if (!hwRtcInit())       die("rtc");
   if (!hwAudioInit())     die("audio");
+  hwLed(0, 0, 0);   // WS2812s power up in a random state
 
   Serial.println("hwInit OK");
 }

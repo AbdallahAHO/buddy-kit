@@ -29,7 +29,7 @@ Cloudflare Worker instead of an AMOLED pet fed by BLE).
 │ lib/wifi-link      provisioning + connection lifecycle       │
 │ lib/virtual-display  framebuffer tee → browser viewer        │
 ├──────────────────────────────────────────────────────────────┤
-│ hal/hw             display/input/power/imu/rtc/audio         │
+│ hal/hw             display/input/power/imu/rtc/audio/led     │
 │ hal/boards         one capability header per board           │
 │ vendor/            upstream-vendored driver libs             │
 └──────────────────────────────────────────────────────────────┘

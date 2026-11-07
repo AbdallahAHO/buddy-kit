@@ -3,7 +3,9 @@
 #include <Arduino.h>
 
 static Arduino_DataBus*  s_bus    = nullptr;
-#if BOARD_DISPLAY_CO5300
+#if BOARD_DISPLAY_ST7789
+static Arduino_ST7789*   s_gfx    = nullptr;
+#elif BOARD_DISPLAY_CO5300
 static Arduino_CO5300*   s_gfx    = nullptr;
 #else
 static Arduino_SH8601*   s_gfx    = nullptr;
@@ -11,6 +13,15 @@ static Arduino_SH8601*   s_gfx    = nullptr;
 static Arduino_Canvas*   s_canvas = nullptr;
 
 static const uint8_t BRIGHT_LUT[5] = { 50, 100, 150, 200, 255 };
+
+#if BOARD_DISPLAY_ST7789
+// ST7789 has no brightness command: the level drives the backlight pin's
+// inverted PWM (duty 0 = full bright).
+static void setBacklight(uint8_t level) {
+  pinMode(PIN_LCD_BL, OUTPUT);
+  analogWrite(PIN_LCD_BL, 255 - level);
+}
+#endif
 
 #if BOARD_DISPLAY_SH8601_VENDOR_INIT
 // LVGL demo SH8601 init for the 2.16 panel revision.
@@ -48,6 +59,15 @@ static void sh8601_vendor_init(Arduino_DataBus* bus) {
 #endif
 
 bool hwDisplayInit() {
+#if BOARD_DISPLAY_ST7789
+  constexpr int32_t BUS_SPEED = 40000000;   // ST7789 SPI clock (xiaozhi's rate)
+  setBacklight(0);   // dark until the first frame, no white flash
+  s_bus = new Arduino_ESP32SPI(PIN_LCD_DC, PIN_LCD_CS, PIN_LCD_SCLK,
+                               PIN_LCD_MOSI, GFX_NOT_DEFINED, FSPI);
+  s_gfx = new Arduino_ST7789(s_bus, PIN_LCD_RESET, BOARD_DISPLAY_ROTATION,
+                             /*ips=*/true, LCD_W_PHYS, LCD_H_PHYS);
+#else
+  constexpr int32_t BUS_SPEED = GFX_NOT_DEFINED;   // driver default
   s_bus = new Arduino_ESP32QSPI(
     PIN_LCD_CS, PIN_LCD_SCLK, PIN_LCD_SDIO0, PIN_LCD_SDIO1,
     PIN_LCD_SDIO2, PIN_LCD_SDIO3);
@@ -61,10 +81,11 @@ bool hwDisplayInit() {
 #else
   s_gfx = new Arduino_SH8601(s_bus, GFX_NOT_DEFINED, 0, LCD_W_PHYS, LCD_H_PHYS);
 #endif
+#endif
   s_canvas = new Arduino_Canvas(HW_W, HW_H, s_gfx);
   // canvas->begin() internally calls gfx->begin() which calls bus init.
   // Calling them separately would double-init the SPI bus → ESP_ERR_INVALID_STATE.
-  if (!s_canvas->begin()) { Serial.println("hwDisplay: canvas begin failed"); return false; }
+  if (!s_canvas->begin(BUS_SPEED)) { Serial.println("hwDisplay: canvas begin failed"); return false; }
   // UTF-8 decode for u8g2 CJK fonts — without this, print() treats each
   // byte of a multi-byte codepoint as its own glyph lookup → mojibake.
   s_canvas->setUTF8Print(true);
@@ -76,7 +97,10 @@ bool hwDisplayInit() {
   s_bus->writeC8D8(0x36, BOARD_CO5300_MADCTL);
   s_bus->endWrite();
 #endif
-#if BOARD_DISPLAY_SH8601_VENDOR_INIT
+#if BOARD_DISPLAY_ST7789
+  s_gfx->fillScreen(0x0000);
+  setBacklight(150);         // default mid-brightness; main may override later
+#elif BOARD_DISPLAY_SH8601_VENDOR_INIT
   sh8601_vendor_init(s_bus);
   // The vendor init ends with brightness max (0x51 0xFF) and DISPON.
   // Black-fill the whole panel once so the borders aren't whatever junk
@@ -94,12 +118,20 @@ Arduino_Canvas* hwCanvas() { return s_canvas; }
 
 void hwDisplayBrightness(uint8_t lvl) {
   if (lvl > 4) lvl = 4;
+#if BOARD_DISPLAY_ST7789
+  setBacklight(BRIGHT_LUT[lvl]);
+#else
   s_gfx->setBrightness(BRIGHT_LUT[lvl]);
+#endif
 }
 
 void hwDisplaySleep(bool off) {
   if (off) {
+#if BOARD_DISPLAY_ST7789
+    setBacklight(0);
+#else
     s_gfx->setBrightness(0);
+#endif
     s_gfx->displayOff();
   } else {
     s_gfx->displayOn();
