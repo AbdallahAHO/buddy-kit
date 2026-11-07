@@ -50,8 +50,9 @@ void test_wifi_settings_decodes_ssid_and_password() {
   size_t n = rpcPacket(pkt, IMPROV_CMD_WIFI_SETTINGS, data, 13);
   TEST_ASSERT_EQUAL_INT(IMPROV_PACKET, feedAll(pkt, n - 1));
   uint8_t len;
+  const uint8_t* d = improvPacketData(p, &len);   // before reading len: argument order is unspecified
   ImprovRpc rpc;
-  TEST_ASSERT_TRUE(improvParseRpc(improvPacketData(p, &len), len, rpc));
+  TEST_ASSERT_TRUE(improvParseRpc(d, len, rpc));
   TEST_ASSERT_EQUAL_STRING("home1", rpc.ssid);
   TEST_ASSERT_EQUAL_STRING("secret", rpc.pass);
 }
