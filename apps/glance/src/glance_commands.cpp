@@ -18,7 +18,12 @@
 LineOut gLineOut;
 static LineOut vdpOut;
 
+static const char* const PAIR_NAMES[] = {
+  "idle", "requesting", "waiting", "approved", "expired", "failed",
+};
+
 static bool cmdStatus(JsonDocument&, void*) {
+  PairView pair = pairLinkView();
   // Slim ack — manual printf rather than ArduinoJson serialize keeps the
   // shape fixed and the heap churn zero.
   char b[512];
@@ -28,7 +33,7 @@ static bool cmdStatus(JsonDocument&, void*) {
     "\"sys\":{\"up\":%lu,\"heap\":%u},"
     "\"wifi\":{\"state\":\"%s\",\"ssid\":\"%s\",\"ip\":\"%s\"},"
     "\"hub\":{\"url\":\"%s\",\"ok\":%s},"
-    "\"notify\":{\"url\":\"%s\",\"ok\":%s},"
+    "\"notify\":{\"url\":\"%s\",\"ok\":%s,\"pair\":\"%s\",\"code\":\"%s\"},"
     "\"ota\":{\"slot\":\"%s\"}"
     "}}\n",
     millis() / 1000, ESP.getFreeHeap(),
@@ -36,6 +41,7 @@ static bool cmdStatus(JsonDocument&, void*) {
     wifiLinkSsid(), wifiLinkIp(),
     httpTransportUrl(), httpTransportHealthy() ? "true" : "false",
     wsTransportUrl(), wsTransportConnected() ? "true" : "false",
+    PAIR_NAMES[pair.phase], pair.phase == PAIR_WAITING ? pair.code : "",
     esp_ota_get_running_partition() ? esp_ota_get_running_partition()->label : "?"
   );
   // snprintf returns the would-be length, not the truncated one — a 32-char
@@ -105,6 +111,8 @@ static bool cmdNotify(JsonDocument& doc, void*) {
 
 // {"cmd":"notifylink","url":"ws(s)://…/api/devices/connect","token":"dtk_…"}
 //   → hold the notify socket (persisted; token may be omitted to keep the stored one)
+// {"cmd":"notifylink","url":"ws(s)://…","pair":true[,"console":"host"]}
+//   → pair over Wi-Fi: show a code, poll until approved, then adopt the token
 // {"cmd":"notifylink","off":true} → close it and forget url + token
 // Not "notify": that name belongs to server frames, and its ack would look
 // like an id-less notify ack on the socket. The token lives in its own NVS
@@ -132,8 +140,20 @@ static bool _wsUrlOk(const char* url) {
       && strlen(url) < 128 && !strpbrk(url, "\"\\ ");
 }
 
+void notifyLinkAdopt(const char* url, const char* token) {
+  _notifySave(url, token);
+  wsTransportStart(url, token);
+}
+
 static bool cmdNotifyLink(JsonDocument& doc, void*) {
+  if (doc["pair"] | false) {
+    const char* url = doc["url"];
+    bool ok = _wsUrlOk(url) && pairLinkStart(url, doc["console"].as<const char*>());
+    lineBusAck(gLineOut, "notifylink", ok);
+    return true;
+  }
   if (doc["off"] | false) {
+    pairLinkClose();
     wsTransportStop();
     _notifySave(nullptr, nullptr);
     lineBusAck(gLineOut, "notifylink", true);

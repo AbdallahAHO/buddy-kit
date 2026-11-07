@@ -1,19 +1,25 @@
 #!/usr/bin/env node
 // Local stand-in for the notify API's device socket (docs/notify-protocol.md).
 // Zero deps: plain `node tools/notify_mock.mjs`. Speaks the v1 contract:
-// Bearer check on upgrade, "ping" → "pong", a question on connect, acks logged.
+// Bearer check on upgrade, "ping" → "pong", a question on connect, acks logged,
+// plus the pairing endpoints (approved pairings hand out TOKEN).
 //
-//   PORT=8787 TOKEN=dtk_dev node tools/notify_mock.mjs
+//   PORT=8787 TOKEN=dtk_dev PAIR_AUTO=15 node tools/notify_mock.mjs
 //
+// PAIR_AUTO = seconds until a new pairing auto-approves (0 = only by key).
 // stdin: q = question · a = approval · m = message · n = notification ·
-//        r <id> = retract · s = status · k = close 4001 (revoke) · x = close 1000
+//        r <id> = retract · s = status · k = close 4001 (revoke) · x = close 1000 ·
+//        p [CODE] = approve a pairing (newest pending if no code) · e = expire pending
 import { createServer } from 'node:http';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes, randomInt } from 'node:crypto';
 import { createInterface } from 'node:readline';
 
 const PORT = Number(process.env.PORT ?? 8787);
 const TOKEN = process.env.TOKEN ?? 'dtk_dev';
 const PATH = '/api/devices/connect';
+const PAIR_AUTO = Number(process.env.PAIR_AUTO ?? 15);
+const PAIR_TTL = Number(process.env.PAIR_TTL ?? 600);
+const PAIR_INTERVAL = Number(process.env.PAIR_INTERVAL ?? 5);
 const sockets = new Set();
 let seq = 0;
 
@@ -78,7 +84,67 @@ const onData = (sock, buf) => {
   return buf;
 };
 
-const server = createServer((req, res) => { res.writeHead(404).end(); });
+// Pairing (device code flow): pairingId → { secret, code, status, expiresAt, host }.
+const pairings = new Map();
+const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTVWXYZ';   // Crockford minus 0 O 1 I L U
+const newCode = () => Array.from({ length: 6 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
+const showCode = (c) => `${c.slice(0, 3)}-${c.slice(3)}`;
+
+const approve = (code) => {
+  const want = code?.toUpperCase().replace(/-/g, '');
+  const hit = [...pairings.entries()].reverse()
+    .find(([, p]) => p.status === 'pending' && (!want || p.code === want));
+  if (!hit) { log('no pending pairing', code ?? ''); return false; }
+  hit[1].status = 'approved';
+  log(`pairing ${hit[0]} approved (${showCode(hit[1].code)})`);
+  return true;
+};
+
+const json = (res, status, body) => {
+  res.writeHead(status, { 'Content-Type': 'application/json' }).end(body ? JSON.stringify(body) : '');
+  return status;
+};
+
+const readBody = (req) => new Promise((ok) => {
+  let b = '';
+  req.on('data', (c) => { b += c; });
+  req.on('end', () => { try { ok(JSON.parse(b || '{}')); } catch { ok(null); } });
+});
+
+const handlePairing = async (req, res) => {
+  const url = req.url.split('?')[0];
+  if (req.method === 'POST' && url === '/api/devices/pair') {
+    const info = await readBody(req);
+    const id = `prq_${randomBytes(6).toString('hex')}`;
+    const p = { secret: `prs_${randomBytes(12).toString('hex')}`, code: newCode(), status: 'pending',
+      expiresAt: Date.now() + PAIR_TTL * 1000, host: req.headers.host };
+    pairings.set(id, p);
+    log(`pair request ${JSON.stringify(info)} → ${id} code ${showCode(p.code)}`);
+    if (PAIR_AUTO > 0) setTimeout(() => p.status === 'pending' && approve(p.code), PAIR_AUTO * 1000);
+    return json(res, 201, { pairingId: id, deviceSecret: p.secret, code: showCode(p.code), expiresIn: PAIR_TTL, interval: PAIR_INTERVAL });
+  }
+  if (req.method === 'POST' && url === '/api/devices/pair/approve') {
+    const body = await readBody(req);
+    return json(res, approve(body?.code) ? 201 : 404, { ok: true });
+  }
+  const m = url.match(/^\/api\/devices\/pair\/([\w-]+)$/);
+  if (req.method === 'GET' && m) {
+    const p = pairings.get(m[1]);
+    if (!p || req.headers.authorization !== `Bearer ${p.secret}`) { log('  poll → 404'); return json(res, 404); }
+    if (p.status === 'pending' && Date.now() > p.expiresAt) p.status = 'expired';
+    if (p.status === 'consumed') return json(res, 410);
+    if (p.status === 'approved') {
+      p.status = 'consumed';
+      log(`  poll ${m[1]} → approved, token handed out`);
+      return json(res, 200, { status: 'approved', token: TOKEN, destinationId: 'dst_mock',
+        connect: `ws://${p.host}${PATH}` });
+    }
+    return json(res, 200, { status: p.status });
+  }
+  return json(res, 404);
+};
+
+const server = createServer((req, res) => { handlePairing(req, res).catch((e) => { log('error', e.message); json(res, 500); }); });
 
 server.on('upgrade', (req, sock) => {
   const auth = req.headers.authorization ?? '';
@@ -111,8 +177,10 @@ createInterface({ input: process.stdin }).on('line', (line) => {
   else if (cmd === 's') sendAll({ cmd: 'status' });
   else if (cmd === 'k') closeAll(4001);
   else if (cmd === 'x') closeAll(1000);
-  else if (cmd) log('keys: q a m n | r <id> | s | k (4001) | x (1000)');
+  else if (cmd === 'p') approve(arg);
+  else if (cmd === 'e') pairings.forEach((p) => { if (p.status === 'pending') p.status = 'expired'; });
+  else if (cmd) log('keys: q a m n | r <id> | s | k (4001) | x (1000) | p [CODE] | e');
 });
 
 server.listen(PORT, '0.0.0.0', () =>
-  log(`notify mock on ws://0.0.0.0:${PORT}${PATH}  token=${TOKEN}`));
+  log(`notify mock on ws://0.0.0.0:${PORT}${PATH}  token=${TOKEN}  pairing auto-approve=${PAIR_AUTO || 'off'}s`));

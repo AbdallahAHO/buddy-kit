@@ -16,32 +16,17 @@ static const int FOOTER_Y   = SAFE_B - 9;
 
 static uint16_t _accent(const NotifyItem& it) { return it.kind == NK_APPROVAL ? RED : AMBER; }
 
-void notifyScreenTick() {
-  uint32_t now = millis();
-  notifyExpire(gNotify, now);
+void notifyScreenTick(bool visible) {
+  uint8_t before = gNotify.n;
+  if (notifyExpire(gNotify, millis()))
+    Serial.printf("[notify] %u expired\n", (unsigned)(before - gNotify.n));
   const NotifyItem* it = notifyHead(gNotify);
-
-  if (it && notifyMarkSeen(gNotify)) {
+  // seen means on screen: not while the pairing overlay covers it.
+  if (visible && it && notifyMarkSeen(gNotify)) {
     char line[96];
     size_t n = notifyAckLine(line, sizeof(line), it->id, "seen");
     if (n) gLineOut.write((const uint8_t*)line, n);
   }
-
-  // LED: a 1.6 s triangle pulse while pending, written only on change.
-  static uint8_t lastLevel = 0;
-  static bool lastRed = false;
-  uint8_t level = 0;
-  bool red = it && it->kind == NK_APPROVAL;
-  if (it) {
-    uint32_t ph = now % 1600;
-    uint32_t tri = ph < 800 ? ph : 1600 - ph;    // 0..800
-    level = (uint8_t)(1 + tri * 15 / 800);       // 1..16
-  }
-  if (level == lastLevel && red == lastRed) return;
-  lastLevel = level; lastRed = red;
-  uint8_t k = level * 6;                         // peak ~96: a WS2812 at 255 glares
-  if (red) hwLed(k, 0, 0);
-  else     hwLed(k, (uint8_t)(k * 2 / 5), 0);
 }
 
 // The panel font is 6x8 ASCII; anything else renders as junk glyphs.

@@ -56,6 +56,25 @@ static void _applyLine(const char* line, TamaState* out) {
   if (ev.kind == AgentEvent::STATE_UPDATED) _lastLiveMs = millis();
 }
 
+// USB also carries Improv Serial: a packet can only start where a line
+// would, so the framer's empty state is the hand-off point.
+static ImprovParser _improv;
+
+template<size_t N>
+static void _pumpUsb(LineFramer<N>& f, TamaState* out) {
+  ByteSource& src = usbSerialSource();
+  while (src.available(src.ctx)) {
+    int c = src.read(src.ctx);
+    if (c < 0) break;
+    ImprovFeed fed = improvFeed(_improv, (uint8_t)c, f.len == 0, millis());
+    if (fed == IMPROV_PACKET || fed == IMPROV_BAD_CHECKSUM)
+      improvHandlePacket(_improv, fed == IMPROV_PACKET);
+    if (fed != IMPROV_NOT_MINE) continue;
+    const char* line = f.feed((char)c);
+    if (line && line[0] == '{') _applyLine(line, out);
+  }
+}
+
 // Pump a ByteSource through a framer; lines starting with '{' get applied.
 template<size_t N>
 static void _pump(ByteSource& src, LineFramer<N>& f, TamaState* out) {
@@ -70,7 +89,7 @@ static void _pump(ByteSource& src, LineFramer<N>& f, TamaState* out) {
 static LineFramer<1024> _usbLine, _httpLine, _wsLine;
 
 void dataPoll(TamaState* out) {
-  _pump(usbSerialSource(), _usbLine, out);
+  _pumpUsb(_usbLine, out);
   _pump(httpByteSource(), _httpLine, out);
   _pump(wsByteSource(), _wsLine, out);
 

@@ -39,8 +39,10 @@ PARTS = [
 OTA_SLOT_SIZE = 0x300000  # ota_0 size from ota_8mb.csv — firmware must fit
 
 APPS = {
-    "buddy": {"display": "buddy-kit · Buddy", "dir": "apps/buddy"},
-    "glance": {"display": "buddy-kit · Glance", "dir": "apps/glance"},
+    # improv: the firmware answers Improv Serial, so ESP Web Tools offers
+    # "Configure Wi-Fi" after install (glance only; see ADR 015).
+    "buddy": {"display": "buddy-kit · Buddy", "dir": "apps/buddy", "improv": False},
+    "glance": {"display": "buddy-kit · Glance", "dir": "apps/glance", "improv": True},
 }
 
 
@@ -137,7 +139,7 @@ def export_app(app: str, version: str, skip_build: bool) -> dict:
         "new_install_prompt_erase": True,
         "builds": [{
             "chipFamily": CHIP_FAMILY,
-            "improv": False,  # firmware speaks our JSON line protocol, not Improv
+            "improv": spec["improv"],
             "parts": [{"path": name, "offset": offset} for offset, name in PARTS],
         }],
     }
