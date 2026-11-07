@@ -37,7 +37,8 @@ protocol.md's table.
 
 Implement `ByteSource` (see `transport-usb` for the 20-line template, or
 `transport-http` for the background-task + rings pattern when the medium
-blocks). Then in the app: register with `gLineOut.add(...)` in
+blocks; `transport-ws` is the same pattern for a held socket with its own
+reconnect policy). Then in the app: register with `gLineOut.add(...)` in
 `appCommandsInit()` and pump it with its own `LineFramer` in
 `agent_link.cpp::dataPoll`. Nothing else changes — commands, acks, snapshots
 and file push ride any byte pipe.

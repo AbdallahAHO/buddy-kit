@@ -1,7 +1,8 @@
 # Connectivity
 
-Two independent pieces: **wifi-link** (getting online, a lifecycle manager —
-not a transport) and **transport-http** (a ByteSource that rides on it).
+Three independent pieces: **wifi-link** (getting online, a lifecycle
+manager — not a transport) and two ByteSources that ride on it:
+**transport-http** (the hub poll) and **transport-ws** (the notify socket).
 
 ## wifi-link states
 
@@ -64,6 +65,40 @@ works over the hub unchanged. `{"cmd":"hub","url":…}` configures + persists
 
 Current limitation: plain `http://` only — fine on the LAN; the M3 Worker
 needs TLS (WiFiClientSecure, ~40 KB RAM) which is not wired yet.
+
+## transport-ws (the notify socket)
+
+A held WebSocket for notify v1 ([notify-protocol.md](notify-protocol.md)),
+built on IDF's `esp_transport_ws` — no new dependency
+([ADR 014](decisions/014-notify-socket-on-idf-ws-transport.md)). One
+FreeRTOS task (8 KB stack, created on the first `wsTransportStart`) owns the
+socket; the loop only touches the rings:
+
+```
+while a url is set, not revoked, and wifi is ONLINE:
+  connect (Authorization: Bearer <token> on the upgrade, 10 s timeout)
+  loop every ≤100 ms:
+    every 30 s → text "ping"            any frame in → liveness
+    75 s with nothing in → close + reconnect
+    TX ring  → one text frame per \n-terminated line (newline stripped)
+    frame in → RX ring + '\n' on FIN    (PING → PONG, CLOSE → read code)
+  on close: 4001 → stop until the next wsTransportStart
+            else backoff 1 s·2^n, cap 60 s, ±20 % jitter;
+                 n resets after a connection that stayed up ≥ 60 s
+```
+
+- `wss://` verifies the server against IDF's built-in CA bundle; there is
+  no insecure mode (the precompiled esp-tls can't skip verification). Use
+  `ws://` for LAN dev against `wrangler dev` or `tools/notify_mock.mjs`.
+- 401/429 on the upgrade back off like any other failure; only close code
+  4001 stops the task.
+- Writes are all-or-nothing and only accepted while connected, so a line
+  is never split and offline status acks don't flush as stale junk.
+- A reconfigure (`notifylink`) drops the live session and reconnects
+  immediately with a fresh backoff.
+
+Muma heap: 284.9 KB free at boot with notify unconfigured, 276.2 KB once
+the task exists (parked, Wi-Fi off). A TLS session adds ~40 KB while up.
 
 ## Coexistence budget (C6)
 
